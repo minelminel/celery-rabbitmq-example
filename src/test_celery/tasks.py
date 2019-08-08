@@ -3,7 +3,7 @@ from test_celery.celery import app
 import time
 
 
-@app.task
+@app.task(name='tasks.longtime_add')
 def longtime_add(x,y):
     print('long time task begins')
     # do something

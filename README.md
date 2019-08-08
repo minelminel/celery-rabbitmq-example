@@ -118,5 +118,17 @@ To start a Flower web console, run the following command inside the project pare
 celery -A test_celery flower
 ```
 
+# Use Case - Scraper
 
-<!-- # <span>file.py</span> -->
+### Workflow
+
+- process is initially disabled
+- enabled is set to True, event triggered
+- on event, add element to 'all_urls'
+- on event, add element from 'all_urls' to 'released_urls'
+- released_urls() is called async
+- response is received
+  - response is moved to 'parse_urls'
+    - response is parsed for info
+    - resulting content is saved to database
+-
