@@ -35,6 +35,7 @@ class Queue(db.Model):
 
 # class Content(db.Model):
 
+# ma.validator
 def must_not_be_blank(data):
     if not data:
         raise ValidationError('Data not provided.')
@@ -53,7 +54,7 @@ class QueueSchema(ma.Schema):
     # def ensure_protocol(self, data):
     #     url_raw = data.get('url')
     #     if 'http://' or 'https://' not in url_raw:
-    #         data.update(url=f'https://{url}')
+    #         data.update(url='https://{}'.format(url))
     #     return data
 
 
@@ -113,25 +114,32 @@ class Api_Index(Resource):
         if errors:
             return reply_error(errors)
         elif data:
-            # soon we will divert the errors from being returned, to writing them to logs
-            #   such that we do not force a break from the 'for' loop. this is just for testing.
             if isinstance(data, list):
+                reply = []
                 for each in data:
-                    q = Queue(url=each['url'])
+                    url = each['url']
+                    q = Queue(url=url)
                     try:
                         db.session.add(q)
                         db.session.commit()
+                        data, errors = queue_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
                     except IntegrityError as e:
-                        return reply_error(error=str(e))
+                        db.session.rollback()
+                        data = url
+                        errors = dict(error=str(e))
+                    reply.append(dict(data=data, errors=errors))
+                return reply_success(reply)
             else:
-                q = Queue(url=data['url'])
+                url = data['url']
+                q = Queue(url=url)
                 try:
                     db.session.add(q)
                     db.session.commit()
+                    data, errors = queue_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
                 except IntegrityError as e:
-                    return reply_error(error=str(e))
-
-            return reply_success(data)
+                    data = url
+                    errors = dict(error=str(e))
+                return reply_success(errors=errors,data=data)
 
 
 api.add_resource(Api_Index, '/')
