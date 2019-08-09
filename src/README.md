@@ -1,9 +1,9 @@
 # TODO
 
+- do: add method to allow dumping of URL Archive to task queue
 - do: get status endpoint url from a more maintainable location such as a config or and environment variable (celery.tasks.sorting_hat)
 - make: Content database class
 - make: Content marshmallow schema
-- 
 
 
 

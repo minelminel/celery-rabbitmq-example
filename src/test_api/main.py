@@ -60,6 +60,7 @@ class Queue(db.Model):
 
 # class Content(db.Model):
 
+
 # ma.validator
 def must_not_be_blank(data):
     if not data:

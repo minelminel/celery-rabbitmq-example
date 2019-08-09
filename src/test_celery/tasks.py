@@ -26,12 +26,15 @@ def sorting_hat(url):
     r = requests.get('http://127.0.0.1:8080/status')
     enabled = r.json().get('enabled')
     print(f'sorting_hat Enabled={enabled} for {url}')
-    if enabled:
+    if enabled is True:
         print(f'sending {url} to tasks.fetch_url')
         return fetch_url(url)
-    else:
+    elif enabled is False:
         print(f'sending {url} to tasks.archive_url')
         return archive_url(url)
+    else:
+        print(f'sorting_hat unable to connect to API')
+        return
 
 
 @app.task(name='tasks.fetch_url')
