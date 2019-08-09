@@ -30,7 +30,7 @@ def nap(n):
 
 
 if __name__ == '__main__':
-    nap(5)
-    pause()
+    # nap(5)
+    # pause()
     # time.sleep(5)
     # resume()
