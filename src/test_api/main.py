@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 ##### CONFIG #####
 
-loc = os.path.dirname(os.path.abspath(__name__))
+loc = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -23,6 +23,31 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(os.path.join(loc, 
 api = Api(app)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
+
+
+class ActionState:
+    def __init__(self, enabled=False):
+        self.enabled = enabled
+
+    def status(self):
+        return dict(enabled=self.enabled)
+
+    def _enable(self):
+        if not self.enabled:
+            self.enabled = True
+
+    def _disable(self):
+        if self.enabled:
+            self.enabled = False
+
+    def toggle_status(self, data):
+        if data.get('enabled') is True:
+            self._enable()
+        elif data.get('enabled') is False:
+            self._disable()
+
+
+State = ActionState()
 
 ##### MODELS #####
 
@@ -57,6 +82,11 @@ class QueueSchema(ma.Schema):
     #         data.update(url='https://{}'.format(url))
     #     return data
 
+class StatusSchema(ma.Schema):
+    enabled = fields.Boolean(required=True)
+
+
+status_schema = StatusSchema()
 
 queue_schema = QueueSchema()
 queues_schema = QueueSchema(many=True)
@@ -142,13 +172,29 @@ class Api_Index(Resource):
                 return reply_success(errors=errors,data=data)
 
 
+class Api_Status(Resource):
+
+    def get(self):
+        return jsonify(State.status())
+
+    @requires_body
+    def post(self):
+        arg = request.get_json().get('enabled')
+        data, errors = status_schema.load(request.get_json())
+        if errors:
+            return reply_error(errors)
+        elif data:
+            State.toggle_status(data)
+            return reply_success(State.status())
+
+
 api.add_resource(Api_Index, '/')
+api.add_resource(Api_Status, '/status')
 
 
 if __name__ == '__main__':
 
     db.create_all()
-
     app.run(
         host='0.0.0.0',
         port=8080,

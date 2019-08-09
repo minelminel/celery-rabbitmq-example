@@ -1,3 +1,15 @@
+# TODO
+
+- do: get status endpoint url from a more maintainable location such as a config or and environment variable (celery.tasks.sorting_hat)
+- make: Content database class
+- make: Content marshmallow schema
+- 
+
+
+
+
+
+
 # figured it out -- workflow
 
 URLs that need to be visited are added to 'all_urls' queue. This queue is set to run until it is empty, and will send tasks to workers greedily. Within this task, we will call one of two child functions.

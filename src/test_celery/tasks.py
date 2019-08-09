@@ -23,7 +23,8 @@ def holding_tank(url):
 @app.task(name='tasks.sorting_hat')
 def sorting_hat(url):
     print(f'sorting_hat task started for {url}')
-    enabled = True
+    r = requests.get('http://127.0.0.1:8080/status')
+    enabled = r.json().get('enabled')
     print(f'sorting_hat Enabled={enabled} for {url}')
     if enabled:
         print(f'sending {url} to tasks.fetch_url')
