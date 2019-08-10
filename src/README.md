@@ -1,16 +1,24 @@
 # TODO
 
+- do: add method to allow dumping of URL Archive to task queue
 - do: get status endpoint url from a more maintainable location such as a config or and environment variable (celery.tasks.sorting_hat)
 - make: Content database class
 - make: Content marshmallow schema
+
+# Workflow - add URLs via API
+- convert api url additions to go directly to the celery queue if enabled=True, else add to database
+# Workflow - load URLs to celery
+- urls are added to the database by default with `tombstone = False`, meaning they still need to be scraped
+- when service is `enabled`, we want to query the database for all urls where tombstone is False
+- for each url in the results, dump to the `many=True` schema version, ONLY want to show the url k-v pair (include?)
+- release url to the `holding_tank` task, if this is successful (should always be) set the corresponding `tombstone` column to True
+- return the INT number of entries which were released to the task queue
+# Workflow - dump URLs from celery
+- url is added to the database with the `tombstone` as its default False value
 - 
 
 
-
-
-
-
-# figured it out -- workflow
+# Overview
 
 URLs that need to be visited are added to 'all_urls' queue. This queue is set to run until it is empty, and will send tasks to workers greedily. Within this task, we will call one of two child functions.
 
