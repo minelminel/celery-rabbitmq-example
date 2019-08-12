@@ -2,27 +2,28 @@ import os
 import datetime
 from pprint import pprint
 from functools import wraps
+from operator import attrgetter
 from flask_restful import Resource
 from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
-
 ##### PROJECT IMPORTS #####
-
 from . import app, api, db, ma
 from .supervisor import Supervisor
-from .models import Queue
+from .models import Queue, Content
 from .schemas import QueueSchema, StatusSchema, ContentSchema
-from .utils import reply_success, reply_error, requires_body, url_value_is_list, url_list_to_many
-
+from .utils import reply_success, reply_error, reply_auto, requires_body, url_value_is_list, url_list_to_many
+##### ADJACENT IMPORTS #####
 from test_celery import holding_tank
 
 ##### OBJECTS #####
-
-supervisor = Supervisor(enabled=True)
-status_schema = StatusSchema()
-queue_schema = QueueSchema()
-queues_schema = QueueSchema(many=True)
-content_schema = ContentSchema()
+supervisor           = Supervisor(enabled=False)
+##### SCHEMA INIT #####
+status_schema        = StatusSchema()
+queue_schema         = QueueSchema()
+queues_schema        = QueueSchema(many=True)
+queues_task_schema   = QueueSchema(many=True, exclude=('id','created_at','modified_at'))
+content_schema       = ContentSchema()
+contents_schema      = ContentSchema(many=True)
 
 ##### API #####
 def handle_url_list_case(json_data):
@@ -32,6 +33,31 @@ def handle_url_list_case(json_data):
         data, errors = queue_schema.load(json_data)
         data = [data]
     return data, errors
+
+
+class Api_Index(Resource):
+
+    def routes_command(sort='endpoint', all_methods=False):
+        """Show all registered routes with endpoints and methods."""
+        rules = list(app.url_map.iter_rules())
+        if not rules:
+            print("No routes were registered.")
+            return
+        ignored_methods = set(() if all_methods else ("HEAD", "OPTIONS"))
+        if sort in ("endpoint", "rule"):
+            rules = sorted(rules, key=attrgetter(sort))
+        elif sort == "methods":
+            rules = sorted(rules, key=lambda rule: sorted(rule.methods))
+        rule_methods = [",".join(sorted(rule.methods - ignored_methods)) for rule in rules]
+        reply = []
+        for rule, methods in zip(rules, rule_methods):
+            if rule.endpoint != 'static':
+                reply.append(dict(endpoint=rule.endpoint,methods=methods.split(','),rule=rule.rule))
+        return reply
+
+    def get(self):
+        routes = self.routes_command()
+        return reply_success(routes)
 
 
 class Api_Status(Resource):
@@ -51,78 +77,90 @@ class Api_Status(Resource):
 
 
 class Api_Queue(Resource):
-    # return all url database entries
+    # show all entries from database
     def get(self):
-        urls = db.session.query(Queue).all()
-        result = queues_schema.dump(urls)
-        return reply_success(result)
-
-    # called from celery when enabled=False
-    @requires_body
-    def put(self):
-        data, errors = handle_url_list_case(request.get_json())
+        result = db.session.query(Queue).all()
+        data, errors = queues_schema.dump(result)
         if errors:
-            return reply_error(errors)
+            return reply_errors(errors)
         elif data:
-            reply = []
-            for each in data:
-                url = each['url']
-                result = db.session.query(Queue).filter_by(url=url).first()
-                if result:
-                    result.tombstone = False
-                    db.session.commit()
-                    data, errors = queue_schema.dump(result)
-                    reply.append(dict(data=data, errors=errors))
-                else:
-                    q = Queue(url=url)
-                    db.session.add(q)
-                    db.session.commit()
-                    data, errors = queue_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
-                    reply.append(dict(data=data, errors=errors))
-            return reply_success(reply)
+            return reply_success(data)
 
-    # add directly to celery task, no db entry
+    # post url(s) directly to celery tasks queue
     @requires_body
     def post(self):
         data, errors = handle_url_list_case(request.get_json())
         if errors:
             return reply_error(errors)
         elif data:
-            # TODO: eliminate previously visited urls
-            # tip: if all urls are removed from the list, this loop will be skipped without errors being raised and a 200 returned.
+            # add to database, skipping if already present
             for each in data:
                 url = each['url']
-                holding_tank.delay(url)
+                result = db.session.query(Queue).filter_by(url=url).first()
+                if not result:
+                    q = Queue(url=url)
+                    db.session.add(q)
+                    db.session.commit()
+            data, errors = queues_task_schema.dump(db.session.query(Queue).filter_by(tombstone=False).all())
+            if errors:
+                reply_error(errors)
+            elif data:
+                reply = []
+                for each in data:
+                    url = each['url']
+                    result = db.session.query(Queue).filter_by(url=url).first()
+                    result.tombstone = True
+                    db.session.commit()
+                    holding_tank.delay(url)
+                    d, e = queue_schema.dump(db.session.query(Queue).filter_by(url=url).first())
+                    reply.append(dict(data=d, errors=e))
             return reply_success(data)
+
+    # saves urls to database (queue, NOT content database)
+    @requires_body
+    def put(self):
+        data, errors = queue_schema.dump(request.get_json())
+        if errors:
+            return reply_error(errors)
+        elif data:
+            url = data['url']
+            result = db.session.query(Queue).filter_by(url=url).first()
+            if result:
+                result.tombstone = data['tombstone']
+                db.session.commit()
+                data, errors = queue_schema.dump(result)
+            else:
+                q = Queue(url=data['url'],tombstone=data['tombstone'])
+                db.session.add(q)
+                db.session.commit()
+                data, errors = queue_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
+            return reply_auto(data, errors)
 
 
 class Api_Content(Resource):
 
     def get(self):
-        return reply_success()
+        contents = db.session.query(Content).all()
+        result = contents_schema.dump(contents)
+        return reply_success(result)
 
     @requires_body
     def post(self):
-        json_data = request.get_json()
-        data, errors = content_schema.dump(request.get_json())
+        data, errors = content_schema.load(request.get_json())
         if errors:
             return reply_error(errors)
         elif data:
-            reply = []
-            urls = url_list_to_many(data)
-            data, errors = queues_schema.load(urls)
-            for each in data:
-                # * * *
-                # THIS SHOULD BE THE CONTENT DATABASE WHERE THIS INFO IS BEING STORED, RIGHT NOW ITS JUST A REPEAT OF THE OTHER METHODS
-                # * * *
-                q = Queue(url=each['url'])
-                db.session.add(q)
+            try:
+                c = Content(**data)
+                db.session.add(c)
                 db.session.commit()
-                data, errors = queue_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
-                reply.append(dict(data=data, errors=errors))
-            return reply_success(reply)
+            except IntegrityError:
+                db.session.rollback()
+            data, errors = content_schema.dump(db.session.query(Content).filter_by(id=c.id).first())
+            return reply_auto(data, errors)
 
 
-api.add_resource(Api_Status, '/status')
-api.add_resource(Api_Queue, '/queue')
-api.add_resource(Api_Content, '/content')
+api.add_resource(Api_Index,     '/')
+api.add_resource(Api_Status,    '/status')
+api.add_resource(Api_Queue,     '/queue')
+api.add_resource(Api_Content,   '/content')
