@@ -1,18 +1,18 @@
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup as BS
+from bs4 import BeautifulSoup
 
-
-def pour_soup(response):
-    return BS(response.content, 'html.parser')
+def remove_duplicates(lst):
+    return list(dict.fromkeys(lst))
 
 
 class NPRParser(object):
-    def __init__(self, url, response):
-        self.url = url
-        self.soup = pour_soup(response)
+    def __init__(self, response):
+        self.url = response.url
+        self.soup = BeautifulSoup(response.content, 'html.parser')
 
     @staticmethod
-    def _strain_links(root, links):
+    def _strain_links(url, links):
+        root = f'https://{urlparse(url).netloc}'
         keep = []
         for link in links:
             if not link:
@@ -49,13 +49,13 @@ class NPRParser(object):
         return captions
 
     def _extract_links(self):
-        all_links = list(set([str(link.get('href')) for link in self.soup.find_all('a')]))
-        url_root = f'http://{urlparse(self.url).netloc}'
-        return self._strain_links(url_root, all_links)
+        all_links = remove_duplicates([str(link.get('href')) for link in self.soup.find_all('a')])
+        return self._strain_links(self.url, all_links)
 
     def extract_content(self):
         title = self._extract_title()
         text = self._extract_text()
         captions = self._extract_captions()
-        links = self._extract_links()
-        return dict(title=title,text=text,captions=captions,links=links,url=self.url)
+        url = self._extract_links()
+        origin = self.url
+        return dict(title=title,text=text,captions=captions,url=url,origin=origin)

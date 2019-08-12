@@ -1,9 +1,16 @@
 # TODO
 
-- do: add method to allow dumping of URL Archive to task queue
+~~Every time we add some urls to the main celery task queue, we want to keep track of them somehow such that we can ignore duplicates. We must make a small change to the route where we add items to the task queue--the change being that we first add the item(s) to the database, and release the urls as tasks once they have been added. In the event of an IntegrityError that means that the url has already been seen by the service and we should remove it from the list of items to be added to the queue. This allows us to solve the redundant loop problem posed by the repeated addition of the same url.~~
+
+
+Ideally with a little more understanding of how request, schema, and sqlalchemy objects play together, we can both eliminate massive segments of code and standardize handling of data in such a way that databases are always safe from errors, by ONLY using marshmallow schemas to handle the loading and dumping objects. updates can even be done with class methods (or maybe static methods if we're just setting a key).
+
+
+
+- ~~do: add method to allow dumping of URL Archive to task queue~~
 - do: get status endpoint url from a more maintainable location such as a config or and environment variable (celery.tasks.sorting_hat)
-- make: Content database class
-- make: Content marshmallow schema
+- ~~make: Content database class~~
+- ~~make: Content marshmallow schema~~
 
 # Workflow - add URLs via API
 - convert api url additions to go directly to the celery queue if enabled=True, else add to database
@@ -15,7 +22,6 @@
 - return the INT number of entries which were released to the task queue
 # Workflow - dump URLs from celery
 - url is added to the database with the `tombstone` as its default False value
-- 
 
 
 # Overview

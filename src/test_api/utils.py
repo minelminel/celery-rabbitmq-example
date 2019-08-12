@@ -10,6 +10,14 @@ def reply_error(*args, **kwargs):
     return make_response(jsonify(*args, **kwargs), 422)
 
 
+def reply_auto(data, errors):
+    if errors:
+        return reply_error(errors)
+    elif data:
+        return reply_success(data)
+
+
+
 # @requires_body
 def requires_body(f):
     @wraps(f)
