@@ -7,8 +7,8 @@ Ideally with a little more understanding of how request, schema, and sqlalchemy 
 
 
 
-- ~~do: add method to allow dumping of URL Archive to task queue~~
 - do: get status endpoint url from a more maintainable location such as a config or and environment variable (celery.tasks.sorting_hat)
+- ~~do: add method to allow dumping of URL Archive to task queue~~
 - ~~make: Content database class~~
 - ~~make: Content marshmallow schema~~
 

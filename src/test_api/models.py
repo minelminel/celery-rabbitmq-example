@@ -10,8 +10,8 @@ class Queue(db.Model):
     created_at =    db.Column(db.DateTime(), nullable=False, default=datetime.datetime.utcnow())
     modified_at =   db.Column(db.DateTime(),nullable=True, onupdate=datetime.datetime.utcnow())
     url =           db.Column(db.String(500), nullable=False, unique=True)
-    tombstone =     db.Column(db.Boolean(), nullable=True, default=False)
-
+    status =     db.Column(db.String(10), nullable=False, default='READY')  #  'TASKED'  'DONE'
+    # tombstone, previously
 
 class Content(db.Model):
     __tablename__ = 'content'
