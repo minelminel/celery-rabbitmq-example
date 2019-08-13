@@ -15,7 +15,8 @@ class QueueSchema(ma.Schema):
     created_at = fields.DateTime(dump_only=True)
     modified_at = fields.DateTime(dump_only=True)
     url = fields.Str(required=True, validate=must_not_be_blank)
-    tombstone = fields.Boolean()
+    status = fields.Str(default='READY') #  'TASKED'  'DONE'
+    # tombstone = fields.Boolean()
 
 
 class StatusSchema(ma.Schema):

@@ -16,12 +16,13 @@ from .utils import reply_success, reply_error, reply_auto, requires_body, url_va
 from test_celery import holding_tank
 
 ##### OBJECTS #####
-supervisor           = Supervisor(enabled=False)
+supervisor           = Supervisor(enabled=True)
 ##### SCHEMA INIT #####
 status_schema        = StatusSchema()
 queue_schema         = QueueSchema()
 queues_schema        = QueueSchema(many=True)
-queues_task_schema   = QueueSchema(many=True, exclude=('id','created_at','modified_at'))
+queue_task_schema    = QueueSchema(exclude=('created_at','modified_at'))
+queues_task_schema   = QueueSchema(many=True, exclude=('created_at','modified_at'))
 content_schema       = ContentSchema()
 contents_schema      = ContentSchema(many=True)
 
@@ -61,10 +62,11 @@ class Api_Index(Resource):
 
 
 class Api_Status(Resource):
-
+    # view whether status is enabled
     def get(self):
         return jsonify(supervisor.status())
 
+    # turn the service on & off
     @requires_body
     def post(self):
         arg = request.get_json().get('enabled')
@@ -74,6 +76,29 @@ class Api_Status(Resource):
         elif data:
             supervisor.toggle_status(data)
             return reply_success(supervisor.status())
+
+    # start service from standstill
+    def put(self):
+        # release all READY urls to the task queue from standstill
+        result = db.session.query(Queue).filter_by(status='READY').all()
+        print(result)
+        data, errors = queues_task_schema.dump(result)
+        if errors:
+            return reply_error(errors)
+        elif data:
+            print(data)
+            reply = []
+            for each in data:
+                res = db.session.query(Queue).filter_by(id=each['id']).first()
+                res.status = 'TASKED'
+                db.session.commit()
+                reply.append(res)
+            for rep in reply:
+                daa, err = queue_task_schema.dump(rep)
+                url = daa.get('url')
+                holding_tank.delay(url)
+            return reply_success()
+        return reply_success()
 
 
 class Api_Queue(Resource):
@@ -89,32 +114,41 @@ class Api_Queue(Resource):
     # post url(s) directly to celery tasks queue
     @requires_body
     def post(self):
+        '''
+        This should be the only place with entry to the celery task queue. Incoming requests can be either single or a list of object.
+
+        >> schema.load request  ==> .: data, errors
+        1.  check if url exists in database, if it does then set the status='TASKED', else create new row
+        2.  dump to schema, append data & errors to list reply
+        '''
         data, errors = handle_url_list_case(request.get_json())
         if errors:
             return reply_error(errors)
         elif data:
             # add to database, skipping if already present
+            reply = []
             for each in data:
                 url = each['url']
                 result = db.session.query(Queue).filter_by(url=url).first()
-                if not result:
-                    q = Queue(url=url)
+                if result:
+                    if result.status != 'READY':
+                        pass
+                    result.status = 'TASKED'
+                    db.session.commit()
+                    daa, err = queue_task_schema.dump(db.session.query(Queue).filter_by(id=result.id).first())
+                    if daa:
+                        reply.append(daa)
+                else:
+                    q = Queue(url=url,status='TASKED')
                     db.session.add(q)
                     db.session.commit()
-            data, errors = queues_task_schema.dump(db.session.query(Queue).filter_by(tombstone=False).all())
-            if errors:
-                reply_error(errors)
-            elif data:
-                reply = []
-                for each in data:
-                    url = each['url']
-                    result = db.session.query(Queue).filter_by(url=url).first()
-                    result.tombstone = True
-                    db.session.commit()
-                    holding_tank.delay(url)
-                    d, e = queue_schema.dump(db.session.query(Queue).filter_by(url=url).first())
-                    reply.append(dict(data=d, errors=e))
-            return reply_success(data)
+                    daa, err = queue_task_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
+                    if daa:
+                        reply.append(daa)
+            for each in reply:
+                url = each['url']
+                holding_tank.delay(url)
+        return reply_success(reply)
 
     # saves urls to database (queue, NOT content database)
     @requires_body
@@ -125,15 +159,9 @@ class Api_Queue(Resource):
         elif data:
             url = data['url']
             result = db.session.query(Queue).filter_by(url=url).first()
-            if result:
-                result.tombstone = data['tombstone']
-                db.session.commit()
-                data, errors = queue_schema.dump(result)
-            else:
-                q = Queue(url=data['url'],tombstone=data['tombstone'])
-                db.session.add(q)
-                db.session.commit()
-                data, errors = queue_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
+            result.status = data['status']
+            db.session.commit()
+            data, errors = queue_schema.dump(result)
             return reply_auto(data, errors)
 
 
@@ -141,8 +169,8 @@ class Api_Content(Resource):
 
     def get(self):
         contents = db.session.query(Content).all()
-        result = contents_schema.dump(contents)
-        return reply_success(result)
+        data, errors = contents_schema.dump(contents)
+        return reply_success(data)
 
     @requires_body
     def post(self):
