@@ -1,5 +1,3 @@
-import os
-
 
 class Supervisor:
     def __init__(self, enabled):
