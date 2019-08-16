@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from . import app, api, db, ma
 from .supervisor import Supervisor
 from .models import Queue, Content
-from .schemas import QueueSchema, StatusSchema, ContentSchema
+from .schemas import QueueSchema, StatusSchema, ContentSchema, QueueArgsSchema
 from .utils import reply_success, reply_error, reply_auto, requires_body, url_value_is_list, url_list_to_many
 ##### ADJACENT IMPORTS #####
 from test_celery import holding_tank
@@ -25,6 +25,7 @@ queue_task_schema    = QueueSchema(exclude=('created_at','modified_at'))
 queues_task_schema   = QueueSchema(many=True, exclude=('created_at','modified_at'))
 content_schema       = ContentSchema()
 contents_schema      = ContentSchema(many=True)
+queue_args_schema    = QueueArgsSchema()
 
 ##### API #####
 def handle_url_list_case(json_data):
@@ -58,58 +59,62 @@ class Api_Index(Resource):
 
     def get(self):
         routes = self.routes_command()
-        return reply_success(routes)
+        queue = {
+            'total':db.session.query(Queue).count(),
+            'READY':db.session.query(Queue).filter_by(status='READY').count(),
+            'TASKED':db.session.query(Queue).filter_by(status='TASKED').count(),
+            'DONE':db.session.query(Queue).filter_by(status='DONE').count(),
+        }
+        content = {
+            'total':db.session.query(Content).count(),
+        }
+        statistics = dict(queue=queue,content=content)
+        return reply_success(api=routes,statistics=statistics)
 
 
 class Api_Status(Resource):
     # view whether status is enabled
     def get(self):
-        return jsonify(supervisor.status())
+        return reply_success(supervisor.status())
 
     # turn the service on & off
     @requires_body
     def post(self):
-        arg = request.get_json().get('enabled')
         data, errors = status_schema.load(request.get_json())
         if errors:
             return reply_error(errors)
         elif data:
             supervisor.toggle_status(data)
+            # return self.put() # calls PUT method directly to release urls
             return reply_success(supervisor.status())
 
-    # start service from standstill
+    # release all READY urls to the task queue
     def put(self):
-        # release all READY urls to the task queue from standstill
+        reply = []
         result = db.session.query(Queue).filter_by(status='READY').all()
-        print(result)
-        data, errors = queues_task_schema.dump(result)
-        if errors:
-            return reply_error(errors)
-        elif data:
-            print(data)
-            reply = []
-            for each in data:
-                res = db.session.query(Queue).filter_by(id=each['id']).first()
-                res.status = 'TASKED'
-                db.session.commit()
-                reply.append(res)
-            for rep in reply:
-                daa, err = queue_task_schema.dump(rep)
-                url = daa.get('url')
-                holding_tank.delay(url)
-            return reply_success()
-        return reply_success()
+        for r in result:
+            r.status = 'TASKED'
+            db.session.commit()
+            # print(f'[to holding_tank] {r.url}')
+            holding_tank.delay(r.url)
+            reply.append({r.url:r.status})
+        msg = f'{len(reply)} items released to task queue'
+        return reply_success(msg=msg,reply=reply)
 
 
 class Api_Queue(Resource):
     # show all entries from database
+    #       send status as a string list
     def get(self):
-        result = db.session.query(Queue).all()
+        msg = []
+        params, _errors = queue_args_schema.load(request.args)
+        result = db.session.query(Queue).filter(Queue.status.in_(params['status'])).limit(params['limit']).all()
         data, errors = queues_schema.dump(result)
         if errors:
             return reply_errors(errors)
         elif data:
-            return reply_success(data)
+            msg.append(params)
+            return reply_success(msg=msg, response=data)
 
     # post url(s) directly to celery tasks queue
     @requires_body
@@ -155,8 +160,10 @@ class Api_Queue(Resource):
     def put(self):
         data, errors = queue_schema.dump(request.get_json())
         if errors:
+            print(errors)
             return reply_error(errors)
         elif data:
+            print(data)
             url = data['url']
             result = db.session.query(Queue).filter_by(url=url).first()
             result.status = data['status']
@@ -170,7 +177,8 @@ class Api_Content(Resource):
     def get(self):
         contents = db.session.query(Content).all()
         data, errors = contents_schema.dump(contents)
-        return reply_success(data)
+        msg = f'{len(data)} items returned'
+        return reply_success(msg=msg,reply=data)
 
     @requires_body
     def post(self):
