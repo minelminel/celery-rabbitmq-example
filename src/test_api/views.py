@@ -165,8 +165,9 @@ class Api_Queue(Resource):
         elif data:
             print(data)
             url = data['url']
+            status = data['status']
             result = db.session.query(Queue).filter_by(url=url).first()
-            result.status = data['status']
+            result.status = status
             db.session.commit()
             data, errors = queue_schema.dump(result)
             return reply_auto(data, errors)

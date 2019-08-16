@@ -9,6 +9,9 @@ URL_FOR_STATUS = 'http://127.0.0.1:8080/status'
 URL_FOR_QUEUE = 'http://127.0.0.1:8080/queue'
 URL_FOR_CONTENT = 'http://127.0.0.1:8080/content'
 
+def raise_error(error, *args, **kwargs):
+    raise error(*args, **kwargs)
+
 
 @celery_app.task(name='tasks.holding_tank')
 def holding_tank(url):
@@ -18,67 +21,43 @@ def holding_tank(url):
 
 @celery_app.task(name='tasks.sorting_hat')
 def sorting_hat(url):
-    try:
-        r = requests.get(URL_FOR_STATUS)
-    except:
-        # print(f'[SORTING_HAT] * Unable to connect to API/status ({url})')
-        return f'[SORTING_HAT] * Unable to connect to {URL_FOR_STATUS} ({url})'
+    r = requests.get(URL_FOR_STATUS)
     enabled = r.json().get('enabled')
-    # print(f'[SORTING_HAT] enabled={enabled} ... {url}')
+    print(f'[SORTING_HAT] enabled={enabled} ... {url}')
     if enabled is True:
         time.sleep(POLITE_WAIT)
         return fetch_url(url)
     elif enabled is False:
-        report = dict(url=url, status='READY')
-        return archive_url(report)
+        return archive_url(url, 'READY')
 
 
 @celery_app.task(name='tasks.fetch_url')
 def fetch_url(url):
     r = requests.get(url)
-    if r.status_code is 200:
-        # print(f'[FETCH_URL] status={r.status_code} ... {url} ')
-        return extract_content(r)
-    else:
-        # print(f'[FETCH_URL] * status={r.status_code} ... {url}')
-        return f'[FETCH_URL] * status={r.status_code} ... {url}'
+    # print(f'[FETCH_URL] status={r.status_code} ... {url} ')
+    return extract_content(r)
 
 
 @celery_app.task(name='tasks.extract_content')
 def extract_content(response):
-    print('[EXTRACT_CONTENT]')
+    # print('[EXTRACT_CONTENT]')
     npr = NPRParser(response)
     content = npr.extract_content()
+    # convert the content to strings
     return archive_content(content)
 
 
 @celery_app.task(name='tasks.archive_content')
 def archive_content(content):
-    urls = content.pop('url')
+    # urls = content.pop('url')
     r = requests.post(URL_FOR_CONTENT, json=content)
-    # print(f'[ARCHIVE_CONTENT] status={r.status_code}')
-    report = dict(url=content['origin'],status='DONE')
-    # fb = feed_back(dict(url=urls))
-    return archive_url(report)
+    print(f'[ARCHIVE_CONTENT]\tstatus_code={r.status_code}\t{content}')
+    return archive_url(content['origin'],'DONE')
 
 
 @celery_app.task(name='tasks.archive_url')
-def archive_url(report):
-    try:
-        r = requests.put(URL_FOR_QUEUE, json=report)
-        # print(f'[ARCHIVE_URL] status_code={r.status_code}')
-        return r.status_code
-    except:
-        # print(f'[ARCHIVE_URL] * Unable to connect to API')
-        return f'[ARCHIVE_URL] * Unable to connect to {URL_FOR_QUEUE}'
-
-
-# @celery_app.task(name='tasks.feed_back')
-# def feed_back(urls):
-#     DEBUG_MODE = False
-#     if not DEBUG_MODE:
-#         r = requests.post(URL_FOR_QUEUE, json=urls)
-#         # print(f'[FEED_BACK] status={r.status_code}')
-#     else:
-#         print(' * * [DEBUG MODE ENABLED] * *')
-#         pass
+def archive_url(url, status):
+    json_data = dict(url=url,status=status)
+    r = requests.put(URL_FOR_QUEUE, json=json_data)
+    print(f'[ARCHIVE_URL]\tstatus_code={r.status_code}\t{json_data}')
+    return r.status_code
