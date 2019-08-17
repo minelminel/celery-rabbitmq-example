@@ -4,7 +4,7 @@ import requests
 from .celery import celery_app
 from .utils import NPRParser
 
-POLITE_WAIT = 0
+POLITE_WAIT = 3
 URL_FOR_STATUS = 'http://127.0.0.1:8080/status'
 URL_FOR_QUEUE = 'http://127.0.0.1:8080/queue'
 URL_FOR_CONTENT = 'http://127.0.0.1:8080/content'
@@ -23,7 +23,7 @@ def holding_tank(url):
 def sorting_hat(url):
     r = requests.get(URL_FOR_STATUS)
     enabled = r.json().get('enabled')
-    print(f'[SORTING_HAT] enabled={enabled} ... {url}')
+    # print(f'[SORTING_HAT] enabled={enabled} ... {url}')
     if enabled is True:
         time.sleep(POLITE_WAIT)
         return fetch_url(url)
