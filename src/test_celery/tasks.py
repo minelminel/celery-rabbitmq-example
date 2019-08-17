@@ -52,7 +52,7 @@ def archive_content(content):
     # urls = content.pop('url')
     r = requests.post(URL_FOR_CONTENT, json=content)
     print(f'[ARCHIVE_CONTENT]\tstatus_code={r.status_code}\t{content}')
-    return archive_url(content['origin'],'DONE')
+    return archive_url(content.get('origin'),'DONE')
 
 
 @celery_app.task(name='tasks.archive_url')

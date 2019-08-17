@@ -21,21 +21,12 @@ supervisor           = Supervisor(enabled=True)
 status_schema        = StatusSchema()
 queue_schema         = QueueSchema()
 queues_schema        = QueueSchema(many=True)
-queue_task_schema    = QueueSchema(exclude=('created_at','modified_at'))
+queue_task_schema    = QueueSchema(only=('status','url'))
 queues_task_schema   = QueueSchema(many=True, exclude=('created_at','modified_at'))
 content_schema       = ContentSchema()
 contents_schema      = ContentSchema(many=True)
 args_schema          = ArgsSchema()
 queue_args_schema    = QueueArgsSchema()
-
-# DEPRECATED
-# def handle_url_list_case(json_data):
-#     if url_value_is_list(json_data):
-#         data, errors = queues_schema.load(url_list_to_many(json_data))
-#     else:
-#         data, errors = queue_schema.load(json_data)
-#         data = [data]
-#     return data, errors
 
 ##### API #####
 
@@ -84,12 +75,10 @@ class Api_Index(Resource):
 
 class Api_Status(Resource):
     # view whether status is enabled
-    # OK
     def get(self):
         return reply_success(supervisor.status())
 
     # turn the service on & off
-    # OK
     @requires_body
     def post(self):
         data, errors = status_schema.load(request.get_json())
@@ -101,7 +90,6 @@ class Api_Status(Resource):
             return reply_success(supervisor.status())
 
     # release all READY urls to the task queue
-    # OK
     def put(self):
         result = db.session.query(Queue).filter_by(status='READY').all()
         for r in result:
@@ -115,7 +103,6 @@ class Api_Status(Resource):
 
 class Api_Queue(Resource):
     # show all entries from database
-    # OK
     def get(self):
         params, _ = queue_args_schema.dump(request.args)
         result = db.session.query(Queue).filter(Queue.status.in_(params.get('status'))).limit(params.get('limit')).all()
@@ -123,61 +110,42 @@ class Api_Queue(Resource):
         return reply_success(msg=params, response=data)
 
     # post url(s) directly to celery tasks queue
-    # BETA
     @requires_body
     def post(self):
-        '''
-        This should be the only place with entry to the celery task queue.
-        Incoming requests can be either single or a list of object.
-
-        >> schema.load request  ==> .: data, errors
-        1.  check if url exists in database, if it does then set the status='TASKED', else create new row
-        2.  dump to schema, append data & errors to list reply
-        # data, errors = handle_url_list_case(request.get_json())   # DEPRECATED
-        '''
         json_data = side_load('url', request.get_json())
-
-        # when we load the list of url-dicts, we want to create Queue object.
         data, errors = queues_schema.load(json_data)
         if errors:
             return reply_error(errors)
         elif data:
-            # this should fail if the process succeeds
-            return reply_success(data)
-
-            # add to database, skipping if already present
             reply = []
             for each in data:
-                result = db.session.query(Queue).filter_by(url=each['url']).first()
+                result = db.session.query(Queue).filter_by(url=each.url).first()
                 if result:
-                    if result.status != 'READY':
-                        pass
-                    result.status = 'TASKED'
-                    db.session.commit()
-                    daa, err = queue_task_schema.dump(db.session.query(Queue).filter_by(id=result.id).first())
-                    if daa:
-                        reply.append(daa)
+                    app.logger.info(f'{each.url} already in Queue')
+                    pass
                 else:
-                    q = Queue(url=url,status='TASKED')
-                    db.session.add(q)
+                    app.logger.info(f'{each.url} added to Queue')
+                    db.session.add(each)
                     db.session.commit()
-                    daa, err = queue_task_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
-                    if daa:
-                        reply.append(daa)
+                    _data, _errors = queue_task_schema.dump(each)
+                    reply.append(_data)
             for each in reply:
-                url = each['url']
-                holding_tank.delay(url)
-        return reply_success(reply)
+                # print(f'[*debug HOLDING_TANK] {each}')
+                holding_tank.delay(each.get('url'))
+            return reply_success(reply)
 
-    # saves urls to queue db
-    # OK
+    # saves urls to queue db, called only be celery
     @requires_body
     def put(self):
-        data, errors = queue_schema.dump(request.get_json())
+        data, errors = queue_schema.load(request.get_json())
         if errors:
             return reply_error(errors)
         elif data:
-            result = db.session.query(Queue).filter_by(url=data.get('url')).first()
+            # return reply_success(queue_schema.dump(data))
+            app.logger.info(f'Searching for {data.url}')
+            result = db.session.query(Queue).filter_by(url=data.url).first()
+            # print(result)
+            return reply_success()
             result.status = data.get('status')
             db.session.commit()
             data, errors = queue_schema.dump(result)
@@ -186,7 +154,6 @@ class Api_Queue(Resource):
 
 class Api_Content(Resource):
     # displays the stored content from db
-    # OK
     def get(self):
         params, _ = args_schema.dump(request.get_json())
         result = db.session.query(Content).limit(params['limit']).all()
@@ -194,7 +161,6 @@ class Api_Content(Resource):
         return reply_success(msg=params,reply=data)
 
     # stores gathered content to db
-    # OK
     @requires_body
     def post(self):
         data, errors = content_schema.load(request.get_json())

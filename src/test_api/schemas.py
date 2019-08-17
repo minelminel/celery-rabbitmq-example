@@ -1,5 +1,5 @@
 import os
-from marshmallow import fields, ValidationError, post_load
+from marshmallow import fields, ValidationError, post_load, pre_load
 
 from . import ma
 from .models import Content, Queue
@@ -38,16 +38,20 @@ class StringList(fields.Field):
 class Uppercase(fields.Field):
     def _serialize(self, value, attr, obj):
         # DUMP
+        if not value:
+            value = ''
         return value.upper()
 
 
-class QueueSchema(ma.Schema):
+class QueueSchema(ma.ModelSchema):
+    class Meta:
+        model = Queue
     # 'READY'  'TASKED'  'DONE'
     id = fields.Int(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     modified_at = fields.DateTime(dump_only=True)
     url = fields.Str(required=True)
-    status = fields.Str(default='READY')
+    status = Uppercase(missing='TASKED', default='READY')
 
 
 class ArgsSchema(ma.Schema):
