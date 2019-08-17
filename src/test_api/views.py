@@ -16,7 +16,7 @@ from .utils import reply_success, reply_error, reply_gone, reply_auto, requires_
 from test_celery import holding_tank
 
 ##### OBJECTS #####
-supervisor           = Supervisor(enabled=True)
+supervisor           = Supervisor(enabled=True, debug=False)
 ##### SCHEMA INIT #####
 status_schema        = StatusSchema()
 queue_schema         = QueueSchema()
@@ -83,18 +83,22 @@ class Api_Status(Resource):
     def post(self):
         data, errors = status_schema.load(request.get_json())
         if errors:
+            app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
             supervisor.toggle_status(data)
             # return self.put() # calls PUT method directly to release urls
-            return reply_success(supervisor.status())
+        return reply_success(supervisor.status())
 
     # release all READY urls to the task queue
     def put(self):
         result = db.session.query(Queue).filter_by(status='READY').all()
         for r in result:
             r.status = 'TASKED'
-            holding_tank.delay(r.url)
+            if not supervisor.status().get('debug'):
+                holding_tank.delay(r.url)
+            else:
+                app.logger.info(f'[**debug STARTUP] {r.url}')
         db.session.commit()
         reply = queues_schema.dump(result).data
         msg = f'{len(reply)} items released to task queue'
@@ -115,41 +119,46 @@ class Api_Queue(Resource):
         json_data = side_load('url', request.get_json())
         data, errors = queues_schema.load(json_data)
         if errors:
+            app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
             reply = []
             for each in data:
                 result = db.session.query(Queue).filter_by(url=each.url).first()
                 if result:
-                    app.logger.info(f'{each.url} already in Queue')
+                    app.logger.info(f'[ALREADY IN QUEUE] {each.url}')
                     pass
                 else:
-                    app.logger.info(f'{each.url} added to Queue')
+                    app.logger.info(f'[ADDED TO QUEUE] {each.url}')
                     db.session.add(each)
                     db.session.commit()
-                    _data, _errors = queue_task_schema.dump(each)
-                    reply.append(_data)
+                    reply.append(queue_task_schema.dump(each).data)
             for each in reply:
-                # print(f'[*debug HOLDING_TANK] {each}')
-                holding_tank.delay(each.get('url'))
+                if not supervisor.status().get('debug'):
+                    holding_tank.delay(each.get('url'))
+                else:
+                    app.logger.info(f'[**debug HOLDING_TANK] {each}')
             return reply_success(reply)
+        return reply_auto(data, errors)
 
     # saves urls to queue db, called only be celery
     @requires_body
     def put(self):
         data, errors = queue_schema.load(request.get_json())
         if errors:
+            app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
-            # return reply_success(queue_schema.dump(data))
-            app.logger.info(f'Searching for {data.url}')
+            app.logger.info(f'[RETURNING] {queue_schema.dump(data)}')
             result = db.session.query(Queue).filter_by(url=data.url).first()
-            # print(result)
-            return reply_success()
-            result.status = data.get('status')
+            if result:
+                result.status = data.status
+            else:
+                app.logger.error(f'[MISSING] {queue_schema.dump(data)}')
+                db.session.add(data)
             db.session.commit()
-            data, errors = queue_schema.dump(result)
-            return reply_auto(data, errors)
+            data, _ = queue_schema.dump(result)
+            return reply_success(data)
 
 
 class Api_Content(Resource):

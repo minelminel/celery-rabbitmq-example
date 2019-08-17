@@ -1,5 +1,5 @@
 import os
-from marshmallow import fields, ValidationError, post_load, pre_load
+from marshmallow import fields, ValidationError, post_load, pre_load, post_dump
 
 from . import ma
 from .models import Content, Queue
@@ -53,6 +53,13 @@ class QueueSchema(ma.ModelSchema):
     url = fields.Str(required=True)
     status = Uppercase(missing='TASKED', default='READY')
 
+    @post_dump
+    def remove_slash(self, data):
+        value = data.get('url')
+        if value:
+            data['url'] = value.strip('/')
+        return data
+
 
 class ArgsSchema(ma.Schema):
     limit = fields.Int(required=False, default=10)
@@ -63,7 +70,8 @@ class QueueArgsSchema(ArgsSchema):
 
 
 class StatusSchema(ma.Schema):
-    enabled = fields.Boolean(required=True)
+    enabled = fields.Boolean(required=False)
+    debug = fields.Boolean(required=False)
 
 
 class ContentSchema(ma.ModelSchema):
