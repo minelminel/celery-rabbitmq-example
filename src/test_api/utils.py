@@ -10,12 +10,32 @@ def reply_error(*args, **kwargs):
     return make_response(jsonify(*args, **kwargs), 422)
 
 
+def reply_gone(*args, **kwargs):
+    return make_response(jsonify(*args, **kwargs), 410)
+
+
 def reply_auto(data, errors):
     if errors:
         return reply_error(errors)
     elif data:
         return reply_success(data)
+    else:
+        return reply_gone()
 
+
+def _side_load(data):
+    reply = []
+    for key, val in data.items():
+        if isinstance(val, list):
+            for each in val:
+                reply.append({key:each})
+        else:
+            reply.append({key:val})
+    return reply
+
+
+def side_load(key, data):
+    return _side_load({key:data.get(key)})
 
 
 # @requires_body

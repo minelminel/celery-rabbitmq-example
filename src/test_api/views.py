@@ -10,35 +10,28 @@ from sqlalchemy.exc import IntegrityError
 from . import app, api, db, ma
 from .supervisor import Supervisor
 from .models import Queue, Content
-from .schemas import QueueSchema, StatusSchema, ContentSchema, QueueArgsSchema
-from .utils import reply_success, reply_error, reply_auto, requires_body, url_value_is_list, url_list_to_many
+from .schemas import QueueSchema, StatusSchema, ContentSchema, ArgsSchema, QueueArgsSchema
+from .utils import reply_success, reply_error, reply_gone, reply_auto, requires_body, url_value_is_list, url_list_to_many, side_load
 ##### ADJACENT IMPORTS #####
 from test_celery import holding_tank
 
 ##### OBJECTS #####
-supervisor           = Supervisor(enabled=True)
+supervisor           = Supervisor(enabled=True, debug=False)
 ##### SCHEMA INIT #####
 status_schema        = StatusSchema()
 queue_schema         = QueueSchema()
 queues_schema        = QueueSchema(many=True)
-queue_task_schema    = QueueSchema(exclude=('created_at','modified_at'))
+queue_task_schema    = QueueSchema(only=('status','url'))
 queues_task_schema   = QueueSchema(many=True, exclude=('created_at','modified_at'))
 content_schema       = ContentSchema()
 contents_schema      = ContentSchema(many=True)
+args_schema          = ArgsSchema()
 queue_args_schema    = QueueArgsSchema()
 
 ##### API #####
-def handle_url_list_case(json_data):
-    if url_value_is_list(json_data):
-        data, errors = queues_schema.load(url_list_to_many(json_data))
-    else:
-        data, errors = queue_schema.load(json_data)
-        data = [data]
-    return data, errors
-
 
 class Api_Index(Resource):
-
+    @staticmethod
     def routes_command(sort='endpoint', all_methods=False):
         """Show all registered routes with endpoints and methods."""
         rules = list(app.url_map.iter_rules())
@@ -57,17 +50,25 @@ class Api_Index(Resource):
                 reply.append(dict(endpoint=rule.endpoint,methods=methods.split(','),rule=rule.rule))
         return reply
 
+    @staticmethod
+    def queue_statistics():
+        return dict(
+            total=db.session.query(Queue).count(),
+            READY=db.session.query(Queue).filter_by(status='READY').count(),
+            TASKED=db.session.query(Queue).filter_by(status='TASKED').count(),
+            DONE=db.session.query(Queue).filter_by(status='DONE').count(),
+        )
+
+    @staticmethod
+    def content_statistics():
+        return dict(
+            total=db.session.query(Content).count(),
+        )
+
     def get(self):
         routes = self.routes_command()
-        queue = {
-            'total':db.session.query(Queue).count(),
-            'READY':db.session.query(Queue).filter_by(status='READY').count(),
-            'TASKED':db.session.query(Queue).filter_by(status='TASKED').count(),
-            'DONE':db.session.query(Queue).filter_by(status='DONE').count(),
-        }
-        content = {
-            'total':db.session.query(Content).count(),
-        }
+        queue = self.queue_statistics()
+        content = self.content_statistics()
         statistics = dict(queue=queue,content=content)
         return reply_success(api=routes,statistics=statistics)
 
@@ -82,118 +83,107 @@ class Api_Status(Resource):
     def post(self):
         data, errors = status_schema.load(request.get_json())
         if errors:
+            app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
             supervisor.toggle_status(data)
             # return self.put() # calls PUT method directly to release urls
-            return reply_success(supervisor.status())
+        return reply_success(supervisor.status())
 
     # release all READY urls to the task queue
     def put(self):
-        reply = []
         result = db.session.query(Queue).filter_by(status='READY').all()
         for r in result:
             r.status = 'TASKED'
-            db.session.commit()
-            # print(f'[to holding_tank] {r.url}')
-            holding_tank.delay(r.url)
-            reply.append({r.url:r.status})
+            if not supervisor.status().get('debug'):
+                holding_tank.delay(r.url)
+            else:
+                app.logger.info(f'[**debug STARTUP] {r.url}')
+        db.session.commit()
+        reply = queues_schema.dump(result).data
         msg = f'{len(reply)} items released to task queue'
         return reply_success(msg=msg,reply=reply)
 
 
 class Api_Queue(Resource):
     # show all entries from database
-    #       send status as a string list
     def get(self):
-        msg = []
-        params, _errors = queue_args_schema.load(request.args)
-        result = db.session.query(Queue).filter(Queue.status.in_(params['status'])).limit(params['limit']).all()
-        data, errors = queues_schema.dump(result)
-        if errors:
-            return reply_errors(errors)
-        elif data:
-            msg.append(params)
-            return reply_success(msg=msg, response=data)
+        params, _ = queue_args_schema.dump(request.args)
+        result = db.session.query(Queue).filter(Queue.status.in_(params.get('status'))).limit(params.get('limit')).all()
+        data, _ = queues_schema.dump(result)
+        return reply_success(msg=params, response=data)
 
     # post url(s) directly to celery tasks queue
     @requires_body
     def post(self):
-        '''
-        This should be the only place with entry to the celery task queue. Incoming requests can be either single or a list of object.
-
-        >> schema.load request  ==> .: data, errors
-        1.  check if url exists in database, if it does then set the status='TASKED', else create new row
-        2.  dump to schema, append data & errors to list reply
-        '''
-        data, errors = handle_url_list_case(request.get_json())
+        json_data = side_load('url', request.get_json())
+        data, errors = queues_schema.load(json_data)
         if errors:
+            app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
-            # add to database, skipping if already present
             reply = []
             for each in data:
-                url = each['url']
-                result = db.session.query(Queue).filter_by(url=url).first()
+                result = db.session.query(Queue).filter_by(url=each.url).first()
                 if result:
-                    if result.status != 'READY':
-                        pass
-                    result.status = 'TASKED'
-                    db.session.commit()
-                    daa, err = queue_task_schema.dump(db.session.query(Queue).filter_by(id=result.id).first())
-                    if daa:
-                        reply.append(daa)
+                    app.logger.info(f'[ALREADY IN QUEUE] {each.url}')
+                    pass
                 else:
-                    q = Queue(url=url,status='TASKED')
-                    db.session.add(q)
+                    app.logger.info(f'[ADDED TO QUEUE] {each.url}')
+                    db.session.add(each)
                     db.session.commit()
-                    daa, err = queue_task_schema.dump(db.session.query(Queue).filter_by(id=q.id).first())
-                    if daa:
-                        reply.append(daa)
+                    reply.append(queue_task_schema.dump(each).data)
             for each in reply:
-                url = each['url']
-                holding_tank.delay(url)
-        return reply_success(reply)
+                if not supervisor.status().get('debug'):
+                    holding_tank.delay(each.get('url'))
+                else:
+                    app.logger.info(f'[**debug HOLDING_TANK] {each}')
+            return reply_success(reply)
+        return reply_auto(data, errors)
 
-    # saves urls to database (queue, NOT content database)
+    # saves urls to queue db, called only be celery
     @requires_body
     def put(self):
-        data, errors = queue_schema.dump(request.get_json())
+        data, errors = queue_schema.load(request.get_json())
         if errors:
-            print(errors)
+            app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
-            print(data)
-            url = data['url']
-            result = db.session.query(Queue).filter_by(url=url).first()
-            result.status = data['status']
+            app.logger.info(f'[RETURNING] {queue_schema.dump(data)}')
+            result = db.session.query(Queue).filter_by(url=data.url).first()
+            if result:
+                result.status = data.status
+            else:
+                app.logger.error(f'[MISSING] {queue_schema.dump(data)}')
+                db.session.add(data)
             db.session.commit()
-            data, errors = queue_schema.dump(result)
-            return reply_auto(data, errors)
+            data, _ = queue_schema.dump(result)
+            return reply_success(data)
 
 
 class Api_Content(Resource):
-
+    # displays the stored content from db
     def get(self):
-        contents = db.session.query(Content).all()
-        data, errors = contents_schema.dump(contents)
-        msg = f'{len(data)} items returned'
-        return reply_success(msg=msg,reply=data)
+        params, _ = args_schema.dump(request.get_json())
+        result = db.session.query(Content).limit(params['limit']).all()
+        data, _ = contents_schema.dump(result)
+        return reply_success(msg=params,reply=data)
 
+    # stores gathered content to db
     @requires_body
     def post(self):
         data, errors = content_schema.load(request.get_json())
         if errors:
+            app.logger.error({__class__:errors})
             return reply_error(errors)
-        elif data:
-            try:
-                c = Content(**data)
-                db.session.add(c)
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-            data, errors = content_schema.dump(db.session.query(Content).filter_by(id=c.id).first())
-            return reply_auto(data, errors)
+        try:
+            db.session.add(data)
+            db.session.commit()
+        except IntegrityError as e:
+            app.logger.error({__class__:str(e)})
+            db.session.rollback()
+        data, errors = content_schema.dump(db.session.query(Content).filter_by(id=data.id).first())
+        return reply_auto(data, errors)
 
 
 api.add_resource(Api_Index,     '/')
