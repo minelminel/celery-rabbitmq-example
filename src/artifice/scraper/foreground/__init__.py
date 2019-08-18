@@ -14,6 +14,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(os.path.join(loc, 'site.db'))
 app.config['REDIS_URL'] = 'redis://password:@localhost:6379/0'
 app.config['REDIS_HIT_COUNTER'] = 'HIT_COUNTER'
+# app.config['FLASK_HOST'] '0.0.0.0'
+# app.config['FLASK_PORT'] = 8080
+# app.config['FLASK_DEBUG'] = True
+# app.config['FLASK_USE_RELOADER'] = False
 # app.config.from_object('config.ProductionConfig')
 api = Api(app)
 db = SQLAlchemy(app)

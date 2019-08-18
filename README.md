@@ -37,7 +37,7 @@ from celery import Celery
 
 app = Celery(
             # Name of the project package.
-            'test_celery',
+            'background',
             # 'broker' arg specifies the broker URL, which should be our RabbitMQ instance.
             # The format is as follows.
             # transport://userid:password@hostname:port/virtual_host
@@ -48,14 +48,14 @@ app = Celery(
             backend='rpc://',
             # 'include' arg specifies a list of modules that you want to import when Celery worker starts.
             # Add tasks module here of the worker can find our task.
-            include=['test_celery.tasks'],
+            include=['background.tasks'],
 )
 ```
 ---
 # <span>tasks.py</span>
 ```python
 from __future__ import absolute_import
-from test_celery.celery import app
+from background.celery import app
 import time
 
 
@@ -90,20 +90,20 @@ Here, we call the task `longtime_add` using the `delay` method, which is needed 
 
 ---
 # Start Celery Worker
-Note: this function must be run inside the parent dir of our project dir `test_celery`
+Note: this function must be run inside the parent dir of our project dir `background`
 
 ```bash
-celery -A test_celery worker --loglevel=info
+celery -A background worker --loglevel=info
 ```
 
 In another console, run the following command.
 ```bash
-python3 -m test_celery.run_tasks
+python3 -m background.run_tasks
 ```
 
 Check the previous Celery console window to ensure that our workers received our task. Logs are displayed with the following format.
 ```
-Received task: test_celery.tasks.longtime_add[taskid]
+Received task: background.tasks.longtime_add[taskid]
 ```
 
 # Monitor Celery in Real Time
@@ -115,7 +115,7 @@ pip install flower
 
 To start a Flower web console, run the following command inside the project parent directory.
 ```bash
-celery -A test_celery flower
+celery -A background flower
 ```
 
 # Use Case - Scraper

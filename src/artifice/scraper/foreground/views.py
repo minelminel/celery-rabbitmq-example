@@ -1,8 +1,9 @@
 import os
+import logging
 import datetime
-from pprint import pprint
 from functools import wraps
 from operator import attrgetter
+import flask
 from flask_restful import Resource
 from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +14,9 @@ from .models import Queue, Content
 from .schemas import QueueSchema, StatusSchema, ContentSchema, ArgsSchema, QueueArgsSchema
 from .utils import reply_success, reply_error, reply_conflict, reply_auto, requires_body, side_load, requests_per_minute
 ##### ADJACENT IMPORTS #####
-from test_celery import holding_tank
+from artifice.scraper.background import holding_tank
+
+log = logging.getLogger(__name__)
 
 ##### OBJECTS #####
 supervisor           = Supervisor(enabled=True, debug=False)
@@ -34,14 +37,14 @@ def increment_redis():
     try:
         redis_client.incr(key)
     except redis.exceptions.ConnectionError as e:
-        app.logger.error(f'[INCREMENT HITS] {str(e)}')
+        log.error(f'[INCREMENT HITS] {str(e)}')
 
 def get_redis_hits():
     key = app.config['REDIS_HIT_COUNTER']
     try:
         hits = int(redis_client.get(key))
     except redis.exceptions.ConnectionError as e:
-        app.logger.error(f'[BEFORE FIRST REQUEST] {str(e)}')
+        log.error(f'[BEFORE FIRST REQUEST] {str(e)}')
         hits = None
     return hits
 
@@ -50,7 +53,7 @@ def reset_redis_hits():
     try:
         redis_client.set(key, 0)
     except redis.exceptions.ConnectionError as e:
-        app.logger.error(f'[RESET REDIS HITS] {str(e)}')
+        log.error(f'[RESET REDIS HITS] {str(e)}')
 
 @app.before_first_request
 def do_before_first_request():
@@ -127,11 +130,11 @@ class Api_Status(Resource):
     def post(self):
         data, errors = status_schema.load(request.get_json())
         if errors:
-            app.logger.error({__class__:errors})
+            log.error({__class__:errors})
             return reply_error(errors)
         elif data:
             changed = supervisor.toggle_status(data)
-            app.logger.info(f'[changed] {changed}')
+            log.info(f'[changed] {changed}')
             msg = supervisor.render_msg(changed)
             # return self.put() # calls PUT method directly to release urls
         return reply_success(msg=msg, **supervisor.status())
@@ -144,7 +147,7 @@ class Api_Status(Resource):
             if not supervisor.status().get('debug'):
                 holding_tank.delay(r.url)
             else:
-                app.logger.debug(f'[**debug**][STARTUP] {r.url}')
+                log.debug(f'[**debug**][STARTUP] {r.url}')
         db.session.commit()
         reply = queues_schema.dump(result).data
         msg = f'{len(reply)} items released to task queue'
@@ -165,25 +168,29 @@ class Api_Queue(Resource):
         json_data = side_load('url', request.get_json())
         data, errors = queues_schema.load(json_data)
         if errors:
-            app.logger.error({__class__:errors})
+            log.error({__class__:errors})
             return reply_error(errors)
         elif data:
             reply = []
             for each in data:
                 result = db.session.query(Queue).filter_by(url=each.url).first()
                 if result:
-                    app.logger.debug(f'[ALREADY IN QUEUE] {each.url}')
+                    log.debug(f'[ALREADY IN QUEUE] {each.url}')
                     pass
                 else:
-                    app.logger.debug(f'[ADDED TO QUEUE] {each.url}')
-                    db.session.add(each)
-                    db.session.commit()
-                    reply.append(queue_task_schema.dump(each).data)
+                    log.debug(f'[ADDED TO QUEUE] {each.url}')
+                    try:
+                        db.session.add(each)
+                        db.session.commit()
+                        reply.append(queue_task_schema.dump(each).data)
+                    except IntegrityError as e:
+                        db.session.rollback()
+                        log.error(data=each,error=str(e))
             for each in reply:
                 if not supervisor.status().get('debug'):
                     holding_tank.delay(each.get('url'))
                 else:
-                    app.logger.info(f'[**debug**][HOLDING_TANK] {each}')
+                    log.info(f'[**debug**][HOLDING_TANK] {each}')
             return reply_success(reply)
         return reply_auto(data, errors)
 
@@ -192,15 +199,15 @@ class Api_Queue(Resource):
     def put(self):
         data, errors = queue_schema.load(request.get_json())
         if errors:
-            app.logger.error({__class__:errors})
+            log.error({__class__:errors})
             return reply_error(errors)
         elif data:
-            app.logger.debug(f'[RETURNING] {queue_schema.dump(data)}')
+            log.debug(f'[RETURNING] {queue_schema.dump(data)}')
             result = db.session.query(Queue).filter_by(url=data.url).first()
             if result:
                 result.status = data.status
             else:
-                app.logger.error(f'[MISSING] {queue_schema.dump(data)}')
+                log.error(f'[MISSING] {queue_schema.dump(data)}')
                 db.session.add(data)
             db.session.commit()
             data, _ = queue_schema.dump(result)
@@ -220,13 +227,13 @@ class Api_Content(Resource):
     def post(self):
         data, errors = content_schema.load(request.get_json())
         if errors:
-            app.logger.error({__class__:errors})
+            log.error({__class__:errors})
             return reply_error(errors)
         try:
             db.session.add(data)
             db.session.commit()
         except IntegrityError as e:
-            app.logger.error({__class__:str(e)})
+            log.error({__class__:str(e)})
             db.session.rollback()
         data, errors = content_schema.dump(db.session.query(Content).filter_by(id=data.id).first())
         return reply_auto(data, errors)
