@@ -4,5 +4,5 @@ celery_app = Celery(
     'background',
     broker='amqp://michael:michael123@localhost/michael_vhost',
     backend='rpc://',
-    include=['background.tasks'],
+    include=['artifice.scraper.background.tasks'],
 )

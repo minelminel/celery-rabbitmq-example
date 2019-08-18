@@ -1,5 +1,7 @@
 # TODO
 
+Add a mechanism by which we can delete any orphaned tasks. By symptom of design, inevitably we will sometimes be left with tasks that are registered as "TASKED" in our QUEUE database, but which are marked as such unintentionally. These tasks raise errors during the process of reporting back, and can throw off our picture of the system. 
+
 ~~Every time we add some urls to the main celery task queue, we want to keep track of them somehow such that we can ignore duplicates. We must make a small change to the route where we add items to the task queue--the change being that we first add the item(s) to the database, and release the urls as tasks once they have been added. In the event of an IntegrityError that means that the url has already been seen by the service and we should remove it from the list of items to be added to the queue. This allows us to solve the redundant loop problem posed by the repeated addition of the same url.~~
 
 
