@@ -7,7 +7,7 @@ from .models import Content, Queue
 # ma.validator
 def must_not_be_blank(data):
     if not data:
-        raise ValidationError('Data not provided.')
+        raise ValidationError('Data must not be blank.')
 
 
 # custom field
@@ -55,9 +55,10 @@ class QueueSchema(ma.ModelSchema):
 
     @post_dump
     def remove_slash(self, data):
-        value = data.get('url')
+        key = 'url'
+        value = data.get(key)
         if value:
-            data['url'] = value.strip('/')
+            data[key] = value.strip('/')
         return data
 
 
@@ -85,26 +86,3 @@ class ContentSchema(ma.ModelSchema):
     title = fields.Str()
     text = fields.Str()
     captions = StringList()
-
-
-# DEPRECATED -- QueueArgsSchema
-# @post_load  # suuuuper janky
-# def validate_and_verify(self, data):
-#     whitelist = ['READY','TASKED','DONE']
-#     status = data.get('status')
-#     if status:
-#         if not isinstance(status, list):
-#             status_list = status.split(',')
-#         else:
-#             status_list = status
-#         status_list = [s.upper().strip() for s in status_list]
-#         status_dict = dict.fromkeys(status_list)
-#         for key in status_list:
-#             if key not in whitelist:
-#                 status_dict.pop(key)
-#         data['status'] = list(status_dict.keys())
-#     else:
-#         data['status'] = whitelist
-#     if not data.get('limit'):
-#         data['limit'] = 10
-#     return data

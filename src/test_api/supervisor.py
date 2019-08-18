@@ -1,8 +1,10 @@
+import datetime
 
 class Supervisor:
     def __init__(self, enabled=False, debug=False):
         self.enabled = enabled
         self.debug = debug
+        self.time = datetime.datetime.now()
 
     def status(self):
         return dict(enabled=self.enabled,debug=self.debug)
@@ -32,3 +34,7 @@ class Supervisor:
             self.debug_on()
         elif data.get('debug') is False:
             self.debug_off()
+
+    def uptime(self):
+        td = str(datetime.datetime.now() - self.time)
+        return td.split('.')[0]

@@ -7,11 +7,11 @@ from flask_restful import Resource
 from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
 ##### PROJECT IMPORTS #####
-from . import app, api, db, ma
+from . import app, api, db, ma, redis_client
 from .supervisor import Supervisor
 from .models import Queue, Content
 from .schemas import QueueSchema, StatusSchema, ContentSchema, ArgsSchema, QueueArgsSchema
-from .utils import reply_success, reply_error, reply_gone, reply_auto, requires_body, url_value_is_list, url_list_to_many, side_load
+from .utils import reply_success, reply_error, reply_gone, reply_auto, requires_body, side_load, requests_per_minute
 ##### ADJACENT IMPORTS #####
 from test_celery import holding_tank
 
@@ -28,28 +28,52 @@ contents_schema      = ContentSchema(many=True)
 args_schema          = ArgsSchema()
 queue_args_schema    = QueueArgsSchema()
 
+##### REDIS #####
+def increment_redis():
+    key = app.config['REDIS_HIT_COUNTER']
+    redis_client.incr(key)
+
+def get_redis_hits():
+    key = app.config['REDIS_HIT_COUNTER']
+    hits = redis_client.get(key)
+    return int(hits)
+
+@app.before_request
+def do_before_request():
+    try:
+        increment_redis()
+    except redis.exceptions.ConnectionError as exc:
+        app.logger.error(f'[BEFORE REQUEST] unable to connect to Redis')
+        pass
+
 ##### API #####
 
 class Api_Index(Resource):
     @staticmethod
     def routes_command(sort='endpoint', all_methods=False):
         """Show all registered routes with endpoints and methods."""
+        reply = []
         rules = list(app.url_map.iter_rules())
         if not rules:
-            print("No routes were registered.")
-            return
+            return reply
         ignored_methods = set(() if all_methods else ("HEAD", "OPTIONS"))
         if sort in ("endpoint", "rule"):
             rules = sorted(rules, key=attrgetter(sort))
         elif sort == "methods":
             rules = sorted(rules, key=lambda rule: sorted(rule.methods))
         rule_methods = [",".join(sorted(rule.methods - ignored_methods)) for rule in rules]
-        reply = []
         for rule, methods in zip(rules, rule_methods):
             if rule.endpoint != 'static':
                 reply.append(dict(endpoint=rule.endpoint,methods=methods.split(','),rule=rule.rule))
         return reply
 
+
+    def get(self):
+        routes = self.routes_command()
+        return reply_success(routes)
+
+
+class Api_Stats(Resource):
     @staticmethod
     def queue_statistics():
         return dict(
@@ -66,11 +90,14 @@ class Api_Index(Resource):
         )
 
     def get(self):
-        routes = self.routes_command()
         queue = self.queue_statistics()
         content = self.content_statistics()
-        statistics = dict(queue=queue,content=content)
-        return reply_success(api=routes,statistics=statistics)
+        database = dict(Queue=queue,Content=content)
+        uptime = supervisor.uptime()
+        total_requests = get_redis_hits()
+        rpm = requests_per_minute(uptime, total_requests)
+        service = dict(uptime=uptime,requests=total_requests,rpm=rpm)
+        return reply_success(database=database,service=service)
 
 
 class Api_Status(Resource):
@@ -187,6 +214,7 @@ class Api_Content(Resource):
 
 
 api.add_resource(Api_Index,     '/')
+api.add_resource(Api_Stats,     '/stats')
 api.add_resource(Api_Status,    '/status')
 api.add_resource(Api_Queue,     '/queue')
 api.add_resource(Api_Content,   '/content')
