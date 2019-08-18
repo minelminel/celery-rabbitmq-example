@@ -11,7 +11,7 @@ from . import app, api, db, ma, redis_client
 from .supervisor import Supervisor
 from .models import Queue, Content
 from .schemas import QueueSchema, StatusSchema, ContentSchema, ArgsSchema, QueueArgsSchema
-from .utils import reply_success, reply_error, reply_gone, reply_auto, requires_body, side_load, requests_per_minute
+from .utils import reply_success, reply_error, reply_conflict, reply_auto, requires_body, side_load, requests_per_minute
 ##### ADJACENT IMPORTS #####
 from test_celery import holding_tank
 
@@ -31,27 +31,43 @@ queue_args_schema    = QueueArgsSchema()
 ##### REDIS #####
 def increment_redis():
     key = app.config['REDIS_HIT_COUNTER']
-    redis_client.incr(key)
+    try:
+        redis_client.incr(key)
+    except redis.exceptions.ConnectionError as e:
+        app.logger.error(f'[INCREMENT HITS] {str(e)}')
 
 def get_redis_hits():
     key = app.config['REDIS_HIT_COUNTER']
-    hits = redis_client.get(key)
-    return int(hits)
+    try:
+        hits = int(redis_client.get(key))
+    except redis.exceptions.ConnectionError as e:
+        app.logger.error(f'[BEFORE FIRST REQUEST] {str(e)}')
+        hits = None
+    return hits
+
+def reset_redis_hits():
+    key = app.config['REDIS_HIT_COUNTER']
+    try:
+        redis_client.set(key, 0)
+    except redis.exceptions.ConnectionError as e:
+        app.logger.error(f'[RESET REDIS HITS] {str(e)}')
+
+@app.before_first_request
+def do_before_first_request():
+    reset_redis_hits()
 
 @app.before_request
 def do_before_request():
-    try:
-        increment_redis()
-    except redis.exceptions.ConnectionError as exc:
-        app.logger.error(f'[BEFORE REQUEST] unable to connect to Redis')
-        pass
+    increment_redis()
+
 
 ##### API #####
 
 class Api_Index(Resource):
     @staticmethod
     def routes_command(sort='endpoint', all_methods=False):
-        """Show all registered routes with endpoints and methods."""
+        """Show all registered routes with endpoints and methods.
+            modified from the terminal print method in flask.cli  """
         reply = []
         rules = list(app.url_map.iter_rules())
         if not rules:
@@ -103,7 +119,8 @@ class Api_Stats(Resource):
 class Api_Status(Resource):
     # view whether status is enabled
     def get(self):
-        return reply_success(supervisor.status())
+        msg = 'hello world'
+        return reply_success(msg=msg, **supervisor.status())
 
     # turn the service on & off
     @requires_body
@@ -113,9 +130,11 @@ class Api_Status(Resource):
             app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
-            supervisor.toggle_status(data)
+            changed = supervisor.toggle_status(data)
+            app.logger.info(f'[changed] {changed}')
+            msg = supervisor.render_msg(changed)
             # return self.put() # calls PUT method directly to release urls
-        return reply_success(supervisor.status())
+        return reply_success(msg=msg, **supervisor.status())
 
     # release all READY urls to the task queue
     def put(self):
@@ -125,7 +144,7 @@ class Api_Status(Resource):
             if not supervisor.status().get('debug'):
                 holding_tank.delay(r.url)
             else:
-                app.logger.info(f'[**debug STARTUP] {r.url}')
+                app.logger.debug(f'[**debug**][STARTUP] {r.url}')
         db.session.commit()
         reply = queues_schema.dump(result).data
         msg = f'{len(reply)} items released to task queue'
@@ -153,10 +172,10 @@ class Api_Queue(Resource):
             for each in data:
                 result = db.session.query(Queue).filter_by(url=each.url).first()
                 if result:
-                    app.logger.info(f'[ALREADY IN QUEUE] {each.url}')
+                    app.logger.debug(f'[ALREADY IN QUEUE] {each.url}')
                     pass
                 else:
-                    app.logger.info(f'[ADDED TO QUEUE] {each.url}')
+                    app.logger.debug(f'[ADDED TO QUEUE] {each.url}')
                     db.session.add(each)
                     db.session.commit()
                     reply.append(queue_task_schema.dump(each).data)
@@ -164,7 +183,7 @@ class Api_Queue(Resource):
                 if not supervisor.status().get('debug'):
                     holding_tank.delay(each.get('url'))
                 else:
-                    app.logger.info(f'[**debug HOLDING_TANK] {each}')
+                    app.logger.info(f'[**debug**][HOLDING_TANK] {each}')
             return reply_success(reply)
         return reply_auto(data, errors)
 
@@ -176,7 +195,7 @@ class Api_Queue(Resource):
             app.logger.error({__class__:errors})
             return reply_error(errors)
         elif data:
-            app.logger.info(f'[RETURNING] {queue_schema.dump(data)}')
+            app.logger.debug(f'[RETURNING] {queue_schema.dump(data)}')
             result = db.session.query(Queue).filter_by(url=data.url).first()
             if result:
                 result.status = data.status
