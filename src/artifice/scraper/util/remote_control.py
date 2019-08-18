@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from test_celery.celery import app as celery_app
+from background.celery import app as celery_app
 import time
 
 consumer_queue = 'celery'

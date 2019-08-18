@@ -83,6 +83,6 @@ class ContentSchema(ma.ModelSchema):
     created_at = fields.DateTime(dump_only=True)
     modified_at = fields.DateTime(dump_only=True)
     origin = fields.Str(required=True)
-    title = fields.Str()
-    text = fields.Str()
+    title = fields.Str(missing='')
+    text = fields.Str(missing='')
     captions = StringList()

@@ -50,12 +50,10 @@ class Supervisor:
 
     def toggle_status(self, data):
         before = self.status()
-        print(before)
         self._toggle_enabled(data)
         self._toggle_debug(data)
         self._toggle_politeness(data)
         after = self.status()
-        print(after)
         changed = cmp_dict(before, after)
         return changed
 
