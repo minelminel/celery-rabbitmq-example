@@ -30,7 +30,7 @@ class NPRParser(object):
             try:
                 return str(self.soup.title.text)
             except:
-                pass
+                return ''
 
     def _extract_text(self):
         p_tags = [e.get_text() for e in self.soup.find_all('p', {})]
