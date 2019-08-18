@@ -1,3 +1,5 @@
+import math
+import datetime
 from functools import wraps
 from flask import make_response, jsonify, request
 
@@ -38,6 +40,24 @@ def side_load(key, data):
     return _side_load({key:data.get(key)})
 
 
+def requests_per_minute(uptime, hits):
+    '''
+    ARGS::
+        uptime => "0:13:32" <str> (hr:min:sec)
+        hits   => 7 <int>
+    # NOTE: uptime 'hours' never roll over for days!
+
+    RETURNS::
+        rate <int>
+    # whatever the rate is calculated to be, we want to
+    #    round the value UP to the nearest integer.
+    '''
+    h, m, s = [int(n) for n in uptime.split(':')]
+    as_minutes = (h*60) + (m) + (s/60)
+    rpm = math.ceil(hits/as_minutes)
+    return rpm
+
+
 # @requires_body
 def requires_body(f):
     @wraps(f)
@@ -47,14 +67,3 @@ def requires_body(f):
         else:
             return reply_error(error='Request body cannot be empty')
     return wrap
-
-
-def url_value_is_list(data):
-    return isinstance(data.get('url'), list)
-
-
-def url_list_to_many(data):
-    reply = []
-    for url in data.get('url'):
-        reply.append(dict(url=url))
-    return reply
