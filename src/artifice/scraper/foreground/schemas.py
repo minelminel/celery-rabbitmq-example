@@ -1,5 +1,5 @@
 import os
-from marshmallow import fields, ValidationError, post_load, pre_load, post_dump
+from marshmallow import fields, ValidationError, post_load, pre_load, pre_dump, post_dump
 
 from . import ma
 from .models import Content, Queue
@@ -43,6 +43,27 @@ class Uppercase(fields.Field):
         return value.upper()
 
 
+# custom field
+class SafeUrl(fields.Field):
+    '''
+    This is a safe way to filter urls. Inputs can assume
+    to be sanitized on load. Otherwise identical urls that
+    differ only by a trailing slash may otherwise be indexed
+    as two different entries. This causes orhan tasks to propegate.
+    '''
+    def _serialize(self, value, attr, obj):
+        # DUMP
+        if not value:
+            value = ''
+        return value.strip('/')
+
+    def _deserialize(self, value, attr, obj):
+        # LOAD
+        if not value:
+            value = ''
+        return value.strip('/')
+
+
 class QueueSchema(ma.ModelSchema):
     class Meta:
         model = Queue
@@ -50,16 +71,16 @@ class QueueSchema(ma.ModelSchema):
     id = fields.Int(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     modified_at = fields.DateTime(dump_only=True)
-    url = fields.Str(required=True)
+    url = SafeUrl(required=True)
     status = Uppercase(missing='TASKED', default='READY')
 
-    @post_dump
-    def remove_slash(self, data):
-        key = 'url'
-        value = data.get(key)
-        if value:
-            data[key] = value.strip('/')
-        return data
+    # @post_dump
+    # def remove_slash(self, data):
+    #     key = 'url'
+    #     value = data.get(key)
+    #     if value:
+    #         data[key] = value.strip('/')
+    #     return data
 
 
 class ArgsSchema(ma.Schema):
@@ -69,6 +90,16 @@ class ArgsSchema(ma.Schema):
 class QueueArgsSchema(ArgsSchema):
     status = fields.List(Uppercase(required=False), default=['READY','TASKED','DONE'])
 
+    @pre_dump
+    def spaces_to_native(self, data):
+        key = 'status'
+        value = data.get(key)
+        print(value, data)
+        if isinstance(value, list):
+            after = value.pop().split(' ')
+            print(f'[after] {after}')
+            data[key] = after
+        return data
 
 class StatusSchema(ma.Schema):
     enabled = fields.Boolean(required=False)
@@ -82,7 +113,7 @@ class ContentSchema(ma.ModelSchema):
     id = fields.Int(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     modified_at = fields.DateTime(dump_only=True)
-    origin = fields.Str(required=True)
-    title = fields.Str(missing='')
-    text = fields.Str(missing='')
+    origin = SafeUrl(required=True)
+    title = fields.Str(missing='',default='')
+    text = fields.Str(missing='',default='')
     captions = StringList()

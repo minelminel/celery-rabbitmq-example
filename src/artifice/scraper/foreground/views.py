@@ -122,7 +122,7 @@ class Api_Stats(Resource):
 class Api_Status(Resource):
     # view whether status is enabled
     def get(self):
-        msg = 'hello world'
+        msg = ['hello world']
         return reply_success(msg=msg, **supervisor.status())
 
     # turn the service on & off
@@ -194,7 +194,7 @@ class Api_Queue(Resource):
             return reply_success(reply)
         return reply_auto(data, errors)
 
-    # saves urls to queue db, called only be celery
+    # saves urls to queue db, used only by celery
     @requires_body
     def put(self):
         data, errors = queue_schema.load(request.get_json())
