@@ -10,11 +10,13 @@
 
 - figure out why the content GET request reverts to the default limit of 10
 
-- use cron job/ scheduled process to monitor the api
+- use cron job/celery scheduler process to monitor the api
 
 - download and customize the Flask monitoringdashboard for use with the service. it is a worthy investment of time to get a robust monitoring solution in place. figure out a way to manage alerts for things like error and request rates/ volumes
 
+- write a simple testing procedure that turns on debug mode, adds a bunch of urls to get them to be entered. then mimic the way the object would be returned as if it were finished by the celery task. go one by one and figure out where the discrepancy lies.
 
+Good work tho, so far. Its a solid prototype, just needs to be leak-proofed and configured more extensively to a central mechanism. ideally we should use a single config file that can be accessed by all modules, in the form of a .cfg file.
 
 ---
 
