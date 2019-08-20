@@ -146,6 +146,7 @@ class Api_Status(Resource):
             r.status = 'TASKED'
             if not supervisor.status().get('debug'):
                 holding_tank.delay(r.url)
+                # send_to_celery(r.url)
             else:
                 log.debug(f'[**debug**][STARTUP] {r.url}')
         db.session.commit()
@@ -189,6 +190,7 @@ class Api_Queue(Resource):
             for each in reply:
                 if not supervisor.status().get('debug'):
                     holding_tank.delay(each.get('url'))
+                    # send_to_celery(each.get('url'))
                 else:
                     log.info(f'[**debug**][HOLDING_TANK] {each}')
             return reply_success(reply)
