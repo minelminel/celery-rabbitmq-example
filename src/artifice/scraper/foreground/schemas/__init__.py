@@ -1,3 +1,7 @@
+from flask_marshmallow import Marshmallow
+
+# ma = Marshmallow()
+
 from .args import *
 from .queue import *
 from .status import *

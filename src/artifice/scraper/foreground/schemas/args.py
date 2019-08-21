@@ -1,10 +1,9 @@
-from marshmallow import fields, pre_dump
+from marshmallow import Schema, fields, pre_dump
 
-from .. import ma
 from .custom import Uppercase
 
 
-class ArgsSchema(ma.Schema):
+class ArgsSchema(Schema):
     limit = fields.Int(required=False, default=10)
 
 
