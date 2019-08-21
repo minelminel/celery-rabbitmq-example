@@ -4,6 +4,7 @@ import datetime
 from functools import wraps
 from operator import attrgetter
 import flask
+# from flask import current_app
 from flask_restful import Resource
 from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
@@ -17,6 +18,7 @@ from .utils import reply_success, reply_error, reply_conflict, reply_auto, requi
 from artifice.scraper.background import holding_tank
 
 log = logging.getLogger(__name__)
+# app = flask.Blueprint('artifice-scraper-foreground', __name__)
 
 ##### OBJECTS #####
 supervisor           = Supervisor(enabled=True, debug=False)
@@ -122,7 +124,7 @@ class Api_Stats(Resource):
 class Api_Status(Resource):
     # view whether status is enabled
     def get(self):
-        msg = 'hello world'
+        msg = ['hello world']
         return reply_success(msg=msg, **supervisor.status())
 
     # turn the service on & off
@@ -146,6 +148,7 @@ class Api_Status(Resource):
             r.status = 'TASKED'
             if not supervisor.status().get('debug'):
                 holding_tank.delay(r.url)
+                # send_to_celery(r.url)
             else:
                 log.debug(f'[**debug**][STARTUP] {r.url}')
         db.session.commit()
@@ -189,12 +192,13 @@ class Api_Queue(Resource):
             for each in reply:
                 if not supervisor.status().get('debug'):
                     holding_tank.delay(each.get('url'))
+                    # send_to_celery(each.get('url'))
                 else:
                     log.info(f'[**debug**][HOLDING_TANK] {each}')
             return reply_success(reply)
         return reply_auto(data, errors)
 
-    # saves urls to queue db, called only be celery
+    # saves urls to queue db, used only by celery
     @requires_body
     def put(self):
         data, errors = queue_schema.load(request.get_json())

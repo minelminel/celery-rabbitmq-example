@@ -1,5 +1,29 @@
 # TODO
 
+- account for items that are getting lost in the process by retaining a status of 'TASKED' even after all the items are dumped from the celery queue
+
+- iron out the method by which request query args are parsed into a list from a single string, once we have a good method to do this it will probably be reused elsewhere
+
+- figure out a way to add scheduled celery tasks, such that we can create backups of the gathered data.
+
+- create a custom marshmallow field for rendering the utc time as an elapsed time, i.e. "7 minutes ago" when displaying both the queue and content database results
+
+- figure out why the content GET request reverts to the default limit of 10
+
+- use cron job/celery scheduler process to monitor the api
+
+- download and customize the Flask monitoringdashboard for use with the service. it is a worthy investment of time to get a robust monitoring solution in place. figure out a way to manage alerts for things like error and request rates/ volumes
+
+- write a simple testing procedure that turns on debug mode, adds a bunch of urls to get them to be entered. then mimic the way the object would be returned as if it were finished by the celery task. go one by one and figure out where the discrepancy lies.
+
+Good work tho, so far. Its a solid prototype, just needs to be leak-proofed and configured more extensively to a central mechanism. ideally we should use a single config file that can be accessed by all modules, in the form of a .cfg file.
+
+---
+
+convert the schemas that handle URLs to employ the built-in URL field
+
+Add a mechanism by which we can delete any orphaned tasks. By symptom of design, inevitably we will sometimes be left with tasks that are registered as "TASKED" in our QUEUE database, but which are marked as such unintentionally. These tasks raise errors during the process of reporting back, and can throw off our picture of the system. We need a DELETE method on the Queue endpoint which will either remove these items from the database, or change these urls to be READY instead of TASKED
+
 ~~Every time we add some urls to the main celery task queue, we want to keep track of them somehow such that we can ignore duplicates. We must make a small change to the route where we add items to the task queue--the change being that we first add the item(s) to the database, and release the urls as tasks once they have been added. In the event of an IntegrityError that means that the url has already been seen by the service and we should remove it from the list of items to be added to the queue. This allows us to solve the redundant loop problem posed by the repeated addition of the same url.~~
 
 

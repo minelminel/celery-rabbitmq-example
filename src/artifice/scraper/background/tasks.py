@@ -1,6 +1,7 @@
 import time
 import requests
 
+# from .celery import celery_app
 from .celery import celery_app
 from .config import Endpoints
 from .parsers import NPRParser
