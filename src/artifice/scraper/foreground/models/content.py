@@ -1,4 +1,5 @@
-from .base import BaseModel, db
+from . import db
+from .base import BaseModel
 
 class Content(BaseModel):
     __tablename__ = 'content'

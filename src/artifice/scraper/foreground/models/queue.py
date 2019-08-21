@@ -1,4 +1,5 @@
-from .base import BaseModel, db
+from . import db
+from .base import BaseModel
 
 class Queue(BaseModel):
     __tablename__ = 'queue'
