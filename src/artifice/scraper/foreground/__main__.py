@@ -1,7 +1,9 @@
 import logging
 
-from . import db, Config, configure_logger, create_app
-# from .resources import app
+from artifice.scraper.cli import configure_logger
+from . import db
+from . import Config, create_app
+
 
 configure_logger(Config)
 logging.info(f'Starting application with Configuration: \n{Config.__dict__}')

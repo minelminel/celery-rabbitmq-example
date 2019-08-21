@@ -1,10 +1,15 @@
 # Resource args_schema request db reply_success reply_error content_schema reply_auto contents_schema IntegrityError log
 import logging
 from flask import request
+from sqlalchemy.exc import IntegrityError
 from flask_restful import Resource
 
 from ..models import db, Content
-from ..utils import reply_success, reply_error, reply_auto,
+from ..utils import reply_success, reply_error, reply_auto, requires_body
+from ..schemas import content_schema, contents_schema, args_schema
+
+log = logging.getLogger(__name__)
+
 
 class Api_Content(Resource):
     # displays the stored content from db
