@@ -5,4 +5,4 @@ echo "[artifice] starting celery service"
 python3 -m artifice.scraper.background &
 echo "[artifice] starting flask service"
 echo "TO KILL AN ORPHANED FLASK SERVER:     kill -9 \`lsof -i:8080 -t\`"
-python3 -m artifice.scraper.foreground --drop_tables 1 --loglevel ERROR --logfile flask.log --stdout 0
+python3 -m artifice.scraper.foreground
