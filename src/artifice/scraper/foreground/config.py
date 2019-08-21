@@ -22,6 +22,9 @@ class Config:
     LOG_LEVEL = 'INFO'
     LOG_FILE = 'flask.log'
     STDOUT = True
+    # supervisor
+    SUPERVISOR_ENABLED = True
+    SUPERVISOR_DEBUG = False
 
 
 def configure_logger(configuration):

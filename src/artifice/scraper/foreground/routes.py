@@ -3,35 +3,21 @@ import logging
 import datetime
 from functools import wraps
 from operator import attrgetter
-import flask
 # from flask import current_app
+import flask
+from flask import request
 from flask_restful import Resource
-from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
 ##### PROJECT IMPORTS #####
 from . import app, api, db, ma, redis_client
-from .supervisor import Supervisor
+from .supervisor import supervisor
 from .models import Queue, Content
-from .schemas import QueueSchema, StatusSchema, ContentSchema, ArgsSchema, QueueArgsSchema
+from .schemas import status_schema, queue_schema, queues_schema, queue_task_schema, queues_task_schema, content_schema, contents_schema, args_schema, queue_args_schema
 from .utils import reply_success, reply_error, reply_conflict, reply_auto, requires_body, side_load, requests_per_minute
 ##### ADJACENT IMPORTS #####
 from artifice.scraper.background import holding_tank
 
 log = logging.getLogger(__name__)
-# app = flask.Blueprint('artifice-scraper-foreground', __name__)
-
-##### OBJECTS #####
-supervisor           = Supervisor(enabled=True, debug=False)
-##### SCHEMA INIT #####
-status_schema        = StatusSchema()
-queue_schema         = QueueSchema()
-queues_schema        = QueueSchema(many=True)
-queue_task_schema    = QueueSchema(only=('status','url'))
-queues_task_schema   = QueueSchema(many=True, exclude=('created_at','modified_at'))
-content_schema       = ContentSchema()
-contents_schema      = ContentSchema(many=True)
-args_schema          = ArgsSchema()
-queue_args_schema    = QueueArgsSchema()
 
 ##### REDIS #####
 def increment_redis():

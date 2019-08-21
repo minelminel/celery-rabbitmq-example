@@ -1,6 +1,6 @@
 import datetime
 
-from .utils import cmp_dict
+from ..utils import cmp_dict
 
 class Supervisor:
     def __init__(self, enabled=False, debug=False, politeness=1):
