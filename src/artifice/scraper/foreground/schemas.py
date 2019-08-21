@@ -13,10 +13,12 @@ def must_not_be_blank(data):
 # custom field
 class StringList(fields.Field):
     '''
+    # serialize
     >>> dump('red|blue|green')
 
         ['red','blue','green']
 
+    # deserialize
     >>> load(['red','blue','green'])
 
         'red|blue|green'
@@ -36,6 +38,7 @@ class StringList(fields.Field):
 
 # custom field
 class Uppercase(fields.Field):
+    
     def _serialize(self, value, attr, obj):
         # DUMP
         if not value:
