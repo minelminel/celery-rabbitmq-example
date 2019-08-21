@@ -15,9 +15,9 @@ class QueueArgsSchema(ArgsSchema):
     def spaces_to_native(self, data):
         key = 'status'
         value = data.get(key)
-        print(value, data)
+        # print(value, data)
         if isinstance(value, list):
             after = value.pop().split(' ')
-            print(f'[after] {after}')
+            # print(f'[after] {after}')
             data[key] = after
         return data
