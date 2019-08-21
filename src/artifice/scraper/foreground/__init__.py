@@ -1,28 +1,31 @@
-import os
 from flask import Flask
-from flask_redis import FlaskRedis
 from flask_restful import Api
+from flask_redis import FlaskRedis
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import flask_monitoringdashboard as dashboard
 
-# from .config import *
-
-loc = os.path.dirname(os.path.abspath(__file__))
+from .config import Config, configure_logger
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(os.path.join(loc, 'site.db'))
-app.config['REDIS_URL'] = 'redis://password:@localhost:6379/0'
-app.config['REDIS_HIT_COUNTER'] = 'HIT_COUNTER'
-
-# app.config['FLASK_HOST'] '0.0.0.0'
-# app.config['FLASK_PORT'] = 8080
-# app.config['FLASK_DEBUG'] = True
-# app.config['FLASK_USE_RELOADER'] = False
-# app.config.from_object('config.ProductionConfig')
+app.config.from_object(Config)
 api = Api(app)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 redis_client = FlaskRedis(app)
 dashboard.bind(app)
+
+# def create_app(config_class=Config):
+#     flask_app = Flask(__name__)
+#     flask_app.config.from_object(Config)
+#     with flask_app.app_context():
+#         init_db()
+#     api.init_app(flask_app)
+#     db.init_app(flask_app)
+#     ma.init_app(flask_app)
+#     redis_client.init_app(flask_app)
+#     dashboard.bind(flask_app)
+#     from artifice.scraper.foreground.views import app
+#     flask_app.register_blueprint(app)
+#
+#     return flask_app

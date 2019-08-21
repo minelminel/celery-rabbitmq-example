@@ -4,6 +4,7 @@ import datetime
 from functools import wraps
 from operator import attrgetter
 import flask
+# from flask import current_app
 from flask_restful import Resource
 from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
@@ -17,6 +18,7 @@ from .utils import reply_success, reply_error, reply_conflict, reply_auto, requi
 from artifice.scraper.background import holding_tank
 
 log = logging.getLogger(__name__)
+# app = flask.Blueprint('artifice-scraper-foreground', __name__)
 
 ##### OBJECTS #####
 supervisor           = Supervisor(enabled=True, debug=False)

@@ -1,40 +1,38 @@
 import logging
 
-from .views import app, db
-from .config import get_configuration, configure_logger
+from . import db, Config, configure_logger
+from .views import app
 
-config = get_configuration()
-configure_logger(config)
-logging.info(f'Starting application with configuration: \n{config.__dict__}')
+configure_logger(Config)
 
-# app = create_flask_app(config)
-
-if config.drop_tables:
+# app = create_app()
+if Config.DROP_TABLES:
     db.drop_all()
     db.create_all()
 
 app.run(
-    host=config.host,
-    port=config.port,
-    debug=config.debug,
-    use_reloader=config.use_reloader,
+    host=Config.FLASK_HOST,
+    port=Config.FLASK_PORT,
+    debug=Config.FLASK_DEBUG,
+    use_reloader=Config.FLASK_USE_RELOADER,
 )
 
-
-
-
-
-
-# import os
-# import logging
-#
 # from .views import app, db
-#
-# db.drop_all()
-# db.create_all()
+# from .cli import get_Configuration, Configure_logger
+
+# Config = get_Configuration()
+# Configure_logger(Config)
+# logging.info(f'Starting application with Configuration: \n{Config.__dict__}')
+
+# app = create_flask_app(Config)
+
+# if Config.drop_tables:
+#     db.drop_all()
+#     db.create_all()
+
 # app.run(
-#     host='0.0.0.0',
-#     port=8080,
-#     debug=True,
-#     use_reloader=True,
+#     host=Config.host,
+#     port=Config.port,
+#     debug=Config.debug,
+#     use_reloader=Config.use_reloader,
 # )
