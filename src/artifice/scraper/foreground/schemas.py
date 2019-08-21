@@ -64,23 +64,32 @@ class SafeUrl(fields.Field):
         return value.strip('/')
 
 
-class QueueSchema(ma.ModelSchema):
-    class Meta:
-        model = Queue
-    # 'READY'  'TASKED'  'DONE'
+class BaseSchema(ma.ModelSchema):
     id = fields.Int(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     modified_at = fields.DateTime(dump_only=True)
+
+
+class QueueSchema(BaseSchema):
+    class Meta:
+        model = Queue
     url = SafeUrl(required=True)
     status = Uppercase(missing='TASKED', default='READY')
 
-    # @post_dump
-    # def remove_slash(self, data):
-    #     key = 'url'
-    #     value = data.get(key)
-    #     if value:
-    #         data[key] = value.strip('/')
-    #     return data
+
+class ContentSchema(BaseSchema):
+    class Meta:
+        model = Content
+    origin = SafeUrl(required=True)
+    title = fields.Str(missing='',default='')
+    text = fields.Str(missing='',default='')
+    captions = StringList()
+
+
+class StatusSchema(ma.Schema):
+    enabled = fields.Boolean(required=False)
+    debug = fields.Boolean(required=False)
+    politeness = fields.Number(required=False)
 
 
 class ArgsSchema(ma.Schema):
@@ -100,20 +109,3 @@ class QueueArgsSchema(ArgsSchema):
             print(f'[after] {after}')
             data[key] = after
         return data
-
-class StatusSchema(ma.Schema):
-    enabled = fields.Boolean(required=False)
-    debug = fields.Boolean(required=False)
-    politeness = fields.Number(required=False)
-
-class ContentSchema(ma.ModelSchema):
-    class Meta:
-        model = Content
-
-    id = fields.Int(dump_only=True)
-    created_at = fields.DateTime(dump_only=True)
-    modified_at = fields.DateTime(dump_only=True)
-    origin = SafeUrl(required=True)
-    title = fields.Str(missing='',default='')
-    text = fields.Str(missing='',default='')
-    captions = StringList()

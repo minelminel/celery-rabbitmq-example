@@ -1,14 +1,12 @@
 import time
 import requests
 
-# from .celery import celery_app
 from .celery import celery_app
 from .config import Endpoints
 from .parsers import NPRParser
+from .util import report_done, report_ready
 
-# URL_FOR_STATUS = 'http://127.0.0.1:8080/status'
-# URL_FOR_QUEUE = 'http://127.0.0.1:8080/queue'
-# URL_FOR_CONTENT = 'http://127.0.0.1:8080/content'
+
 endpoints = Endpoints()
 
 
@@ -30,7 +28,7 @@ def sorting_hat(url, **kwargs):
         time.sleep(politeness)
         return fetch_url(url, **kwargs)
     elif enabled is False:
-        return archive_url(url, 'READY', **kwargs)
+        return archive_url(report_ready(url), **kwargs)
 
 
 @celery_app.task(name='tasks.fetch_url')
@@ -50,12 +48,12 @@ def extract_content(response, **kwargs):
 def archive_content(content, **kwargs):
     r = requests.post(endpoints.CONTENT, json=content)
     fb = feed_back(content)
-    return archive_url(content.get('origin'), 'DONE', feedback=fb, **kwargs)
+    url = content.get('origin')
+    return archive_url(report_done(url), feedback=fb, **kwargs)
 
 
 @celery_app.task(name='tasks.archive_url')
-def archive_url(url, status, **kwargs):
-    json_data = dict(url=url,status=status)
+def archive_url(json_data, **kwargs):
     r = requests.put(endpoints.QUEUE, json=json_data)
     return r.status_code, {**kwargs}
 

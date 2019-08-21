@@ -10,7 +10,7 @@ from flask import request, redirect, jsonify
 from sqlalchemy.exc import IntegrityError
 ##### PROJECT IMPORTS #####
 from . import app, api, db, ma, redis_client
-from .supervisor import Supervisor
+from .supervisor import supervisor
 from .models import Queue, Content
 from .schemas import QueueSchema, StatusSchema, ContentSchema, ArgsSchema, QueueArgsSchema
 from .utils import reply_success, reply_error, reply_conflict, reply_auto, requires_body, side_load, requests_per_minute
@@ -20,8 +20,6 @@ from artifice.scraper.background import holding_tank
 log = logging.getLogger(__name__)
 # app = flask.Blueprint('artifice-scraper-foreground', __name__)
 
-##### OBJECTS #####
-supervisor           = Supervisor(enabled=True, debug=False)
 ##### SCHEMA INIT #####
 status_schema        = StatusSchema()
 queue_schema         = QueueSchema()
