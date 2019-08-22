@@ -8,15 +8,15 @@ def test_supervisor_default_init_types():
     sv = Supervisor()
     assert isinstance(sv.enabled, bool)
     assert isinstance(sv.debug, bool)
-    assert isinstance(sv.politeness, (int, float))
+    assert isinstance(sv.polite, (int, float))
     assert isinstance(sv.time, datetime.datetime)
 
 
 def test_supervisor_default_init_values():
-    sv = Supervisor(enabled=False, debug=False, politeness=1)
+    sv = Supervisor(enabled=False, debug=False, polite=1)
     assert sv.enabled is False
     assert sv.debug is False
-    assert sv.politeness == 1
+    assert sv.polite == 1
 
 
 def test_supervisor_uptime():
@@ -33,10 +33,10 @@ def test_supervisor_status():
     status = sv.status()
     assert 'enabled' in status.keys()
     assert 'debug' in status.keys()
-    assert 'politeness' in status.keys()
+    assert 'polite' in status.keys()
     assert sv.enabled == status.get('enabled')
     assert sv.debug == status.get('debug')
-    assert sv.politeness == status.get('politeness')
+    assert sv.polite == status.get('polite')
 
 
 def test_supervisor__enable():
@@ -111,29 +111,29 @@ def test_supervisor__toggle_debug():
     assert sv.debug is True
 
 
-def test_supervisor__toggle_politeness():
-    sv = Supervisor(politeness=1)
-    assert sv.politeness == 1
-    sv._toggle_politeness({'politeness':3.14})
-    assert sv.politeness == 3.14
-    sv._toggle_politeness({'politeness':0.0001})
-    assert sv.politeness == 0.0001
-    sv._toggle_politeness({'politeness':2})
-    assert sv.politeness == 2
-    sv._toggle_politeness({'politeness':True})
-    assert sv.politeness == 2
-    sv._toggle_politeness({'politeness':'abc'})
-    assert sv.politeness == 2
-    sv._toggle_politeness({'politeness':{1}})
-    assert sv.politeness == 2
-    sv._toggle_politeness({'politeness':[1]})
-    assert sv.politeness == 2
-    sv._toggle_politeness({})
-    assert sv.politeness == 2
+def test_supervisor__toggle_polite():
+    sv = Supervisor(polite=1)
+    assert sv.polite == 1
+    sv._toggle_polite({'polite':3.14})
+    assert sv.polite == 3.14
+    sv._toggle_polite({'polite':0.0001})
+    assert sv.polite == 0.0001
+    sv._toggle_polite({'polite':2})
+    assert sv.polite == 2
+    sv._toggle_polite({'polite':True})
+    assert sv.polite == 2
+    sv._toggle_polite({'polite':'abc'})
+    assert sv.polite == 2
+    sv._toggle_polite({'polite':{1}})
+    assert sv.polite == 2
+    sv._toggle_polite({'polite':[1]})
+    assert sv.polite == 2
+    sv._toggle_polite({})
+    assert sv.polite == 2
 
 
 def test_supervisor_toggle_status():
-    sv = Supervisor(enabled=False, debug=False, politeness=1)
+    sv = Supervisor(enabled=False, debug=False, polite=1)
 
     ch = sv.toggle_status({'enabled':False})
     assert not ch
@@ -167,21 +167,21 @@ def test_supervisor_toggle_status():
     assert not ch
     assert sv.debug is False
 
-    ch = sv.toggle_status({'politeness':1})
+    ch = sv.toggle_status({'polite':1})
     assert not ch
-    assert sv.politeness == 1
-    ch = sv.toggle_status({'politeness':2})
-    assert ch == {'politeness':2}
-    assert sv.politeness == 2
-    ch = sv.toggle_status({'politeness':'abc'})
+    assert sv.polite == 1
+    ch = sv.toggle_status({'polite':2})
+    assert ch == {'polite':2}
+    assert sv.polite == 2
+    ch = sv.toggle_status({'polite':'abc'})
     assert not ch
-    assert sv.politeness == 2
-    ch = sv.toggle_status({'politeness':False})
+    assert sv.polite == 2
+    ch = sv.toggle_status({'polite':False})
     assert not ch
-    assert sv.politeness == 2
+    assert sv.polite == 2
     ch = sv.toggle_status({})
     assert not ch
-    assert sv.politeness == 2
+    assert sv.polite == 2
 
 
 def test_supervisor_render_msg():
@@ -192,11 +192,11 @@ def test_supervisor_render_msg():
     data = dict(debug=True)
     msg = sv.render_msg(data)
     assert 'debug ==> True' in msg
-    data = dict(politeness=1)
+    data = dict(polite=1)
     msg = sv.render_msg(data)
-    assert 'politeness ==> 1' in msg
-    data = dict(enabled=True, debug=True, politeness=1)
+    assert 'polite ==> 1' in msg
+    data = dict(enabled=True, debug=True, polite=1)
     msg = sv.render_msg(data)
     assert 'enabled ==> True' in msg
     assert 'debug ==> True' in msg
-    assert 'politeness ==> 1' in msg
+    assert 'polite ==> 1' in msg

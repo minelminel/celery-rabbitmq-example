@@ -32,9 +32,9 @@ def foo():
 # foo()
 
 
-before = dict(enabled=True,debug=False,politeness=1)
+before = dict(enabled=True,debug=False,polite=1)
 
-after = dict(enabled=True,debug=False,politeness=1.5)
+after = dict(enabled=True,debug=False,polite=1.5)
 
 # iterate thru keys, check corresponding value in other dict
 # if values are different, append to reply

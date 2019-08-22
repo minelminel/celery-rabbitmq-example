@@ -42,12 +42,12 @@ def test_app_status_get_msg(client):
     assert isinstance(val, list)
 
 
-def test_app_status_get_politeness(client):
+def test_app_status_get_polite(client):
     '''
-    ensure status route is returning a valid POLITENESS value
+    ensure status route is returning a valid polite value
     '''
     rv = client.get('/status')
-    key = 'politeness'
+    key = 'polite'
     val = rv.json.get(key)
     assert isinstance(val, (int, float))
     assert val > 0
