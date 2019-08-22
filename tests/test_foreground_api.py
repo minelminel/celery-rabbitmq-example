@@ -97,7 +97,7 @@ def test_app_queue_get(client):
 
 def test_app_content_get(client):
     '''
-    ensure queue route displays the proper formatting.
+    ensure content route displays the proper formatting.
     no args are passed so test for default values.
     '''
     rv = client.get('/queue')

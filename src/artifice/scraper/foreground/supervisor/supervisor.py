@@ -14,7 +14,11 @@ class Supervisor:
         return td.split('.')[0]
 
     def status(self):
-        return dict(enabled=self.enabled,debug=self.debug,politeness=self.politeness)
+        return dict(
+            enabled=self.enabled,
+            debug=self.debug,
+            politeness=self.politeness
+        )
 
     def _enable(self):
         if not self.enabled:
@@ -45,8 +49,11 @@ class Supervisor:
             self._debug_off()
 
     def _toggle_politeness(self, data):
-        if data.get('politeness'):
-            self.politeness = data.get('politeness')
+        new_value = data.get('politeness')
+        if isinstance(new_value, bool):
+            pass
+        elif isinstance(new_value, (int, float)):
+            self.politeness = new_value
 
     def toggle_status(self, data):
         before = self.status()
