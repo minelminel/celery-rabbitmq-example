@@ -17,7 +17,7 @@ class Api_Queue(Resource):
         params, _ = queue_args_schema.dump(request.args)
         result = db.session.query(Queue).filter(Queue.status.in_(params.get('status'))).limit(params.get('limit')).all()
         data, _ = queues_schema.dump(result)
-        return reply_success(msg=params, response=data)
+        return reply_success(msg=params, reply=data)
 
     # post url(s) directly to celery tasks queue
     @requires_body
