@@ -1,10 +1,8 @@
 # TODO
 
-- account for items that are getting lost in the process by retaining a status of 'TASKED' even after all the items are dumped from the celery queue
+- ~~account for items that are getting lost in the process by retaining a status of 'TASKED' even after all the items are dumped from the celery queue~~
 
 - iron out the method by which request query args are parsed into a list from a single string, once we have a good method to do this it will probably be reused elsewhere
-
-- figure out a way to add scheduled celery tasks, such that we can create backups of the gathered data.
 
 - create a custom marshmallow field for rendering the utc time as an elapsed time, i.e. "7 minutes ago" when displaying both the queue and content database results
 
@@ -14,9 +12,11 @@
 
 - download and customize the Flask monitoringdashboard for use with the service. it is a worthy investment of time to get a robust monitoring solution in place. figure out a way to manage alerts for things like error and request rates/ volumes
 
-- write a simple testing procedure that turns on debug mode, adds a bunch of urls to get them to be entered. then mimic the way the object would be returned as if it were finished by the celery task. go one by one and figure out where the discrepancy lies.
+- ~~write a simple testing procedure that turns on debug mode, adds a bunch of urls to get them to be entered. then mimic the way the object would be returned as if it were finished by the celery task. go one by one and figure out where the discrepancy lies.~~
 
-Good work tho, so far. Its a solid prototype, just needs to be leak-proofed and configured more extensively to a central mechanism. ideally we should use a single config file that can be accessed by all modules, in the form of a .cfg file.
+- scheduled tasks within fmd
+
+Its a solid prototype, just needs to be leak-proofed and configured more extensively to a central mechanism. ideally we should use a single config file that can be accessed by all modules, in the form of a .cfg file.
 
 ---
 

@@ -1,18 +1,16 @@
-from urllib.parse import urlparse
-from bs4 import BeautifulSoup
-
-def remove_duplicates(lst):
-    return list(dict.fromkeys(lst))
+from .base import BaseParser
+from .util import remove_duplicates, url_root
 
 
-class NPRParser(object):
+class NPRParser(BaseParser):
     def __init__(self, response):
+        from bs4 import BeautifulSoup
         self.url = response.url
         self.soup = BeautifulSoup(response.content, 'html.parser')
 
     @staticmethod
     def _strain_links(url, links):
-        root = f'https://{urlparse(url).netloc}'
+        root = url_root(url)
         keep = []
         for link in links:
             if not link:
