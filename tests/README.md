@@ -20,6 +20,7 @@
 
 ### part 10: edge cases, known error verification
 
+### legacy test mockup script
 ```python
 import unittest
 import os

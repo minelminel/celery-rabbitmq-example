@@ -23,9 +23,9 @@ def holding_tank(url, **kwargs):
 def sorting_hat(url, **kwargs):
     r = requests.get(endpoints.STATUS)
     enabled = r.json().get('enabled')
-    politeness = r.json().get('politeness')
+    polite = r.json().get('polite')
     if enabled is True:
-        time.sleep(politeness)
+        time.sleep(polite)
         return fetch_url(url, **kwargs)
     elif enabled is False:
         return archive_url(report_ready(url), **kwargs)

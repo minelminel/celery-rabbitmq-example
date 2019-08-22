@@ -2,7 +2,7 @@ import logging
 from flask import Blueprint
 from flask_restful import Api
 
-
+# url_prefix from settings.cfg
 v1 = Blueprint('v1', __name__)
 
 api = Api()

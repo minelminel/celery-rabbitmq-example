@@ -3,11 +3,11 @@ import datetime
 from ..utils import cmp_dict
 
 class Supervisor:
-    def __init__(self, enabled=False, debug=False, politeness=1):
+    def __init__(self, enabled=False, debug=False, polite=1):
         self.enabled = enabled
         self.debug = debug
         self.time = datetime.datetime.now()
-        self.politeness = politeness
+        self.polite = polite
 
     def uptime(self):
         td = str(datetime.datetime.now() - self.time)
@@ -17,7 +17,7 @@ class Supervisor:
         return dict(
             enabled=self.enabled,
             debug=self.debug,
-            politeness=self.politeness
+            polite=self.polite
         )
 
     def _enable(self):
@@ -48,18 +48,18 @@ class Supervisor:
         elif data.get('debug') is False:
             self._debug_off()
 
-    def _toggle_politeness(self, data):
-        new_value = data.get('politeness')
+    def _toggle_polite(self, data):
+        new_value = data.get('polite')
         if isinstance(new_value, bool):
             pass
         elif isinstance(new_value, (int, float)):
-            self.politeness = new_value
+            self.polite = new_value
 
     def toggle_status(self, data):
         before = self.status()
         self._toggle_enabled(data)
         self._toggle_debug(data)
-        self._toggle_politeness(data)
+        self._toggle_polite(data)
         after = self.status()
         changed = cmp_dict(before, after)
         return changed
