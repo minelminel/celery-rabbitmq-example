@@ -1,3 +1,4 @@
+
 echo "[artifice] configuring logging"
 echo "" > flask.log
 echo "" > celery.log
