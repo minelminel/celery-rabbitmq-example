@@ -200,3 +200,6 @@ def test_supervisor_render_msg():
     assert 'enabled ==> True' in msg
     assert 'debug ==> True' in msg
     assert 'polite ==> 1' in msg
+    data = None
+    msg = sv.render_msg(data)
+    assert not msg

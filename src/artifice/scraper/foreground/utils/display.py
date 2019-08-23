@@ -1,5 +1,6 @@
 import math
 
+
 def requests_per_minute(uptime, hits):
     '''
     ARGS::

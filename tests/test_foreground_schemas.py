@@ -4,6 +4,49 @@ from artifice.scraper.foreground.schemas import *
 
 
 '''
+~/schemas/base.py
+
+1. verify that base call is in fact abstract
+2. assert that inherited schemas require declaring db model
+'''
+def test_app_base_schema_abstract():
+    import datetime
+    from artifice.scraper.foreground.schemas.base import BaseSchema
+    schema = BaseSchema()
+    stuff = {
+        'id':1,
+        'created_at':datetime.datetime.utcnow(),
+        'modified_at':None,
+    }
+    data, errors = schema.dump(stuff)
+    assert not errors
+    assert data
+    assert [key in data.keys() for key in stuff.keys()]
+    with pytest.raises(AttributeError):
+        schema.load(stuff)
+
+def test_app_base_schema_inherits():
+    from marshmallow import Schema, fields
+    from artifice.scraper.foreground.schemas.base import BaseSchema
+    class TestSchema(BaseSchema):
+        foo = fields.Str()
+        bar = fields.Integer()
+
+    schema = TestSchema()
+    stuff = {
+        'foo':'hello, world!',
+        'bar':1024,
+    }
+    with pytest.raises(AttributeError):
+        schema.load(stuff)
+    data, errors = schema.dump(stuff)
+    assert not errors
+    assert [key in data.keys() for key in stuff.keys()]
+    # ensure that inherited keys are present
+    assert [key in data.keys() for key in ['id','created_at','modified_at']]
+
+
+'''
 ~/resources/status.py
 
 1. LOAD on request.get_json(), passed to Supervisor.toggle_status()
@@ -39,8 +82,9 @@ def test_app_status_schema_bad():
     }
     data, errors = schema.load(stuff)
     assert errors
+    assert data
 
-def test_app_status_schema_stuff():
+def test_app_status_schema_nothing():
     schema = status_schema
     stuff = {
         'pizza':4,
@@ -83,9 +127,17 @@ def test_app_queue_args_schema_bad():
     params, errors = schema.dump(stuff)
     assert errors is not None
 
+def test_app_queue_args_schema_nothing():
+    schema = queue_args_schema
+    stuff = {
+        'ralph':'wiggum',
+        1:True
+    }
+    params, errors = schema.dump(stuff)
+    assert errors is not None
+
 
 # def test_app_queues_schema():
-#     # queues_schema
 #     schema = queues_schema
 #     pass
 #
@@ -119,7 +171,3 @@ def test_app_queue_args_schema_bad():
 #     schema = args_schema
 #     pass
 #
-# def test_app_queue_args_schema():
-#     # queue_args_schema
-#     schema = queue_args_schema
-#     pass
