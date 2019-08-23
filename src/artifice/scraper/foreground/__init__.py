@@ -15,8 +15,10 @@ ma = Marshmallow()
 redis_client = FlaskRedis()
 
 
-def init_db():
+def init_db(drop=False):
     from .models import db
+    if drop:
+        db.drop_all()
     db.create_all()
 
 
@@ -28,7 +30,7 @@ def create_app(config_class=Config):
     api.init_app(flask_app)
     db.init_app(flask_app)
     with flask_app.app_context():
-        init_db()
+        init_db(drop=True)
     flask_app.app_context().push()
     ma.init_app(flask_app)
 
@@ -46,5 +48,11 @@ def create_app(config_class=Config):
     @flask_app.before_request
     def do_before_request():
         increment_redis()
+
+    # @flask_app.route('/testing')
+    # def get_testing_config():
+    #     from artifice.scraper.foreground.utils import reply_success
+    #     return reply_success(DATABASE=flask_app.config.get('DATABASE'),
+    #         SQLALCHEMY_DATABASE_URI=flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
 
     return flask_app
