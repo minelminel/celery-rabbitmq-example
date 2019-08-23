@@ -28,7 +28,7 @@ class Api_Status(Resource):
             log.info(f'[changed] {changed}')
             msg = supervisor.render_msg(changed)
             # return self.put() # calls PUT method directly to release urls
-        return reply_success(msg=msg, **supervisor.status())
+            return reply_success(msg=msg, **supervisor.status())
 
     # release all READY urls to the task queue
     def put(self):

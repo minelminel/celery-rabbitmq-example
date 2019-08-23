@@ -2,6 +2,12 @@ import pytest
 from . import client
 # GET requests, atomic operations
 
+# def test_app_using_test_database(client):
+#     # dumb hack to get DATABASE config value from within test client
+#     rv = client.get('/testing')
+#     assert rv.json.get('DATABASE')
+#     assert rv.json.get('SQLALCHEMY_DATABASE_URI')
+
 def test_app_index_get(client):
     '''
     ensure index route is active and that
