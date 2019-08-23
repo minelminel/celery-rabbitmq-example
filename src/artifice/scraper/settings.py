@@ -9,7 +9,7 @@ import sys
 loc = os.path.dirname(os.path.abspath(__file__))
 #
 # Foreground
-# 
+#
 TESTING = False
 URL_PREFIX = '/'
 
@@ -37,7 +37,6 @@ ARGS_DEFAULT_STATUS = ['READY', 'TASKED', 'DONE']
 SUPERVISOR_ENABLED = False
 SUPERVISOR_DEBUG = True
 SUPERVISOR_POLITE = 3
-
 #
 # Background
 #
