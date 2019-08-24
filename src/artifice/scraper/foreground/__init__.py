@@ -23,18 +23,20 @@ def init_db(drop=False):
     db.create_all()
 
 
-def create_app(*args, config_from=Config, **kwargs):
-    flask_app = Flask(__name__, instance_relative_config=True)
+def create_app(*args, config_from=Config, **settings_override):
+    # flask_app = Flask(__name__, instance_relative_config=True)
+    flask_app = Flask(__name__)
     # load production/development config
     flask_app.config.from_object(config_from)
     # allow test config settings overrides
-    flask_app.config.update(**kwargs)
+    flask_app.config.update(**settings_override)
 
-    # ensure the instance folder exists
-    try:
-        os.makedirs(flask_app.instance_path)
-    except OSError:
-        pass
+    # # ensure the instance folder exists
+    # try:
+    #     os.makedirs(flask_app.instance_path)
+    # except OSError:
+    #     pass
+    # raise ValueError(flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
 
     redis_client.init_app(flask_app)
     api.init_app(flask_app)
@@ -60,12 +62,5 @@ def create_app(*args, config_from=Config, **kwargs):
     @flask_app.before_request
     def do_before_request():
         increment_redis()
-
-    @flask_app.route('/testing')
-    def get_testing_config():
-        from artifice.scraper.foreground.utils import reply_success
-        return reply_success(TESTING=flask_app.config.get('TESTING'),
-            DATABASE=flask_app.config.get('DATABASE'),
-            SQLALCHEMY_DATABASE_URI=flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
 
     return flask_app

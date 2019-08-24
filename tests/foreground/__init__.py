@@ -1,1 +1,1 @@
-from .. import client
+from ..conftools import client

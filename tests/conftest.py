@@ -6,13 +6,18 @@ import pytest
 from artifice.scraper.foreground import create_app
 from artifice.scraper.foreground.models import db as _db
 
-
+# settings_override
 TEST_BASE_DIR = os.getcwd()
 TESTDB = 'test_project.db'
 TESTDB_PATH = os.path.join(TEST_BASE_DIR, TESTDB)
 TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
 # ALEMBIC_CONFIG = '/opt/artifice/alembic.ini'
 
+# # alembic operation
+# def apply_migrations():
+#     """Applies all alembic migrations."""
+#     config = Config(ALEMBIC_CONFIG)
+#     upgrade(config, 'head')
 
 @pytest.fixture(scope='session')
 def app(request):
@@ -34,12 +39,6 @@ def app(request):
     return app
 
 
-# def apply_migrations():
-#     """Applies all alembic migrations."""
-#     config = Config(ALEMBIC_CONFIG)
-#     upgrade(config, 'head')
-
-
 @pytest.fixture(scope='session')
 def db(app, request):
     """Session-wide test database."""
@@ -51,6 +50,8 @@ def db(app, request):
         os.unlink(TESTDB_PATH)
 
     _db.app = app
+    _db.init_app(app)
+    _db.create_all()
     # apply_migrations()
 
     request.addfinalizer(teardown)
@@ -81,17 +82,3 @@ def session(db, request):
 def client(app, request):
     client = app.test_client()
     yield client
-
-
-def test_is_using_testing_config(client):
-    rv = client.get('/testing')
-    assert rv.status_code is 200
-    assert rv.json.get('TESTING') is True
-
-
-# def test_api_model_content_post(session):
-#     from artifice.scraper.foreground.models import Content
-#     post = Content()
-#     session.add(post)
-#     session.commit()
-#     assert post.id > 0
