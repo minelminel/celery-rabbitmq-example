@@ -1,101 +1,73 @@
 import pytest
 from . import session
 
-# good_raw_data = {
-#   'title': 'Politics : NPR',
-#   'text': 'Greenland, a Danish territory, has strategic value in terms of military activity and natural resources.',
-#   'captions': '',
-#   'origin': 'https://www.npr.org/sections/politics/'
-# }
-# bad_raw_data = {
-#   'title': 'Politics : NPR',
-#   'text': 'Greenland, a Danish territory, has strategic value in terms of military activity and natural resources, said a member of Denmarks parliament.',
-#   'captions': '',
-# }
-# good_native_data = {
-#   'title': 'Politics : NPR',
-#   'text': 'Greenland, a Danish territory, has strategic value in terms of military activity and natural resources.',
-#   'captions': ['caption','here'],
-#   'origin': 'https://www.npr.org/sections/politics/'
-# }
-# bad_native_data = {
-#   'title': 'Politics : NPR',
-#   'text': 'Greenland, a Danish territory, has strategic value in terms of military activity and natural resources, said a member of Denmarks parliament.',
-#   'captions': ['caption','here'],
-# }
-# more_native_data = {
-#   'title': 'Sports : NPR',
-#   'text': 'This is some text that might be found within the page.',
-#   'captions': ['more','captions'],
-#   'origin': 'https://www.npr.org/sections/sports/'
-# }
-#
-# def test_models_queue_is_empty(session):
-#     from artifice.scraper.foreground.models import Queue
-#     result = session.query(Queue).all()
-#     assert not result
-#
-# def test_models_queue_add_dict_pass(session):
-#     from artifice.scraper.foreground.models import Queue
-#     cls = Queue(**good_raw_data)
-#     session.add(cls)
-#     session.commit()
-#     assert cls.id is 1
-#
-# def test_models_queue_add_dict_fail(session):
-#     from artifice.scraper.foreground.models import Queue
-#     with pytest.raises(Exception):
-#         cls = Queue(**bad_raw_data)
-#         session.add(cls)
-#         session.commit()
-#
-# def test_models_queue_add_dict_twice(session):
-#     from artifice.scraper.foreground.models import Queue
-#     cls = Queue(**good_raw_data)
-#     session.add(cls)
-#     session.commit()
-#     assert cls.id is 1
-#     with pytest.raises(Exception):
-#         cls = Queue(**good_raw_data)
-#         session.add(cls)
-#         session.commit()
-#
-# def test_models_queue_add_cls_pass(session):
-#     from artifice.scraper.foreground.schemas import QueueSchema
-#     schema = QueueSchema()
-#     cls, errors = schema.load(good_native_data)
-#     assert not errors
-#     session.add(cls)
-#     session.commit()
-#     assert cls.id is 1
-#
-# def test_models_queue_add_cls_fail(session):
-#     from artifice.scraper.foreground.schemas import QueueSchema
-#     schema = QueueSchema()
-#     cls, errors = schema.load(bad_native_data)
-#     assert errors
-#     with pytest.raises(Exception):
-#         session.add(cls)
-#         session.commit()
-#
-# def test_models_queue_add_cls_twice(session):
-#     from artifice.scraper.foreground.schemas import QueueSchema
-#     schema = QueueSchema()
-#     cls, errors = schema.load(good_native_data)
-#     assert not errors
-#     session.add(cls)
-#     session.commit()
-#     assert cls.id is 1
-#     with pytest.raises(Exception):
-#         cls, errors = schema.load(good_native_data)
-#         assert not errors
-#         session.add(cls)
-#         session.commit()
-#
+
+def test_models_queue_is_empty(session):
+    '''
+    ensure that a fresh database is present
+    '''
+    from artifice.scraper.foreground.models import Queue
+    result = session.query(Queue).all()
+    assert not result
+
+def test_models_queue_add_one_pass(session):
+    '''
+    add a single url in a raw format without use of schemas
+    '''
+    from artifice.scraper.foreground.models import Queue
+    data = {'url': 'https://www.npr.org/sections/politics/'}
+    cls = Queue(**data)
+    session.add(cls)
+    session.commit()
+    assert cls.id is 1
+    assert cls.status == 'READY'
+
+def test_models_queue_add_one_fail(session):
+    '''
+    ensure exception is raised if no valid keys are present
+    '''
+    from artifice.scraper.foreground.models import Queue
+    data = {'malicious': 'goo goo ga ga'}
+    with pytest.raises(Exception):
+        cls = Queue(**data)
+        session.add(cls)
+        session.commit()
+
+def test_models_queue_add_same_twice(session):
+    '''
+    ensure exception is raised if the entry exists
+    '''
+    from artifice.scraper.foreground.models import Queue
+    data = {'url': 'https://www.npr.org/sections/politics/'}
+    cls = Queue(**data)
+    session.add(cls)
+    session.commit()
+    assert cls.id is 1
+    with pytest.raises(Exception):
+        cls = Queue(**data)
+        session.add(cls)
+        session.commit()
+
+def test_models_queue_status_override(session):
+    '''
+    ensure that status can be overridden by data
+    '''
+    from artifice.scraper.foreground.schemas import QueueSchema
+    schema = QueueSchema()
+    data = {'url':'https://www.npr.org/sections/politics/',
+            'status':'DONE'}
+    cls, errors = schema.load(data)
+    assert not errors
+    session.add(cls)
+    session.commit()
+    assert cls.status == 'DONE'
+
 # def test_models_queue_get_one(session):
 #     from artifice.scraper.foreground.schemas import QueueSchema
 #     schema = QueueSchema()
-#     cls, errors = schema.load(good_native_data)
+#     schemas = QueueSchema(many=True)
+#     data =
+#     cls, errors = schema.load(data)
 #     assert not errors
 #     session.add(cls)
 #     session.commit()
