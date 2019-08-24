@@ -30,14 +30,11 @@ def create_app(*args, config_from=Config, **settings_override):
     flask_app.config.from_object(config_from)
     # allow test config settings overrides
     flask_app.config.update(**settings_override)
-
     # # ensure the instance folder exists
     # try:
     #     os.makedirs(flask_app.instance_path)
     # except OSError:
     #     pass
-    # raise ValueError(flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
-
     redis_client.init_app(flask_app)
     api.init_app(flask_app)
     db.init_app(flask_app)
@@ -48,7 +45,14 @@ def create_app(*args, config_from=Config, **settings_override):
         init_db(drop=True)
     ctx.push()
 
-    # dashboard.bind(flask_app)
+    # # binding the dashboard spawns a scheduled process that
+    # # needs to be gracefully handled upon shutdown, making
+    # # it difficult to reply on for testing clients.
+    if not flask_app.config.get('TESTING'):
+        dashboard.bind(flask_app)
+        # # ADD CUSTOM GRAPHS HERE
+        # ...
+
     from artifice.scraper.foreground.resources import v1
     flask_app.register_blueprint(v1)
     # flask_app.register_blueprint(v1, url_prefix='/v1')
