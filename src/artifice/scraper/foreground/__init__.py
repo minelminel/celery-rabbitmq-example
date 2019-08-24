@@ -1,4 +1,5 @@
 # foreground/__init__.py
+import os
 from flask import Flask, jsonify
 from flask_restful import Api
 from flask_redis import FlaskRedis
@@ -22,17 +23,30 @@ def init_db(drop=False):
     db.create_all()
 
 
-def create_app(config_class=Config):
+def create_app(*args, config_from=Config, **settings_override):
+    # flask_app = Flask(__name__, instance_relative_config=True)
     flask_app = Flask(__name__)
-    flask_app.config.from_object(Config)
+    # load production/development config
+    flask_app.config.from_object(config_from)
+    # allow test config settings overrides
+    flask_app.config.update(**settings_override)
+
+    # # ensure the instance folder exists
+    # try:
+    #     os.makedirs(flask_app.instance_path)
+    # except OSError:
+    #     pass
+    # raise ValueError(flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
 
     redis_client.init_app(flask_app)
     api.init_app(flask_app)
     db.init_app(flask_app)
-    with flask_app.app_context():
-        init_db(drop=True)
-    flask_app.app_context().push()
     ma.init_app(flask_app)
+
+    ctx = flask_app.app_context()
+    with ctx:
+        init_db(drop=True)
+    ctx.push()
 
     # dashboard.bind(flask_app)
     from artifice.scraper.foreground.resources import v1
@@ -48,11 +62,5 @@ def create_app(config_class=Config):
     @flask_app.before_request
     def do_before_request():
         increment_redis()
-
-    # @flask_app.route('/testing')
-    # def get_testing_config():
-    #     from artifice.scraper.foreground.utils import reply_success
-    #     return reply_success(DATABASE=flask_app.config.get('DATABASE'),
-    #         SQLALCHEMY_DATABASE_URI=flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
 
     return flask_app
