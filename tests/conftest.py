@@ -24,7 +24,8 @@ def app(request):
     """Session-wide test `Flask` application."""
     settings_override = {
         'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI
+        'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI,
+        'PRESERVE_CONTEXT_ON_EXCEPTION': False,
     }
     app = create_app(__name__, **settings_override)
 
@@ -33,7 +34,10 @@ def app(request):
     ctx.push()
 
     def teardown():
-        ctx.pop()
+        try:
+            ctx.pop()
+        except AssertionError:
+            pass
 
     request.addfinalizer(teardown)
     return app

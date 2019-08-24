@@ -1,5 +1,4 @@
 import pytest
-from flask import request
 
 
 @pytest.fixture

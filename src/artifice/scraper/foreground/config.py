@@ -3,6 +3,8 @@ import os
 loc = os.path.dirname(os.path.abspath(__file__))
 
 class Config:
+    # global
+    TESTING = False
     # database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format(os.path.join(loc, 'site.db'))
@@ -23,3 +25,4 @@ class Config:
     # supervisor
     SUPERVISOR_ENABLED = True
     SUPERVISOR_DEBUG = False
+    SUPERVISOR_POLITE = 1
