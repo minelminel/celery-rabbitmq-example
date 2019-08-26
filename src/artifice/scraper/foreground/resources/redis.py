@@ -6,7 +6,7 @@ from .. import redis_client
 
 log = logging.getLogger(__name__)
 
-def increment_redis():
+def increment_redis_hits():
     key = current_app.config['REDIS_HIT_COUNTER']
     try:
         redis_client.incr(key)

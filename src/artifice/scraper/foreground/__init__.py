@@ -35,6 +35,8 @@ def create_app(*args, config_from=Config, **settings_override):
     #     os.makedirs(flask_app.instance_path)
     # except OSError:
     #     pass
+
+    # bind extensions to app instance
     redis_client.init_app(flask_app)
     api.init_app(flask_app)
     db.init_app(flask_app)
@@ -47,17 +49,18 @@ def create_app(*args, config_from=Config, **settings_override):
 
     # # binding the dashboard spawns a scheduled process that
     # # needs to be gracefully handled upon shutdown, making
-    # # it difficult to reply on for testing clients.
+    # # it difficult to rely on for testing clients.
     if not flask_app.config.get('TESTING'):
         dashboard.bind(flask_app)
         # # ADD CUSTOM GRAPHS HERE
-        # ...
+        # from artifice.scraper.foreground.utils.graphs import my_func, schedule
+        # dashboard.add_graph('Graph1', lambda: my_func(), **schedule)
 
     from artifice.scraper.foreground.resources import v1
     flask_app.register_blueprint(v1)
     # flask_app.register_blueprint(v1, url_prefix='/v1')
 
-    from .resources import reset_redis_hits, increment_redis
+    from .resources import reset_redis_hits, increment_redis_hits
 
     @flask_app.before_first_request
     def do_before_first_request():
@@ -65,6 +68,6 @@ def create_app(*args, config_from=Config, **settings_override):
 
     @flask_app.before_request
     def do_before_request():
-        increment_redis()
+        increment_redis_hits()
 
     return flask_app
