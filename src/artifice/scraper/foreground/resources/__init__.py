@@ -8,7 +8,7 @@ v1 = Blueprint('v1', __name__)
 api = Api()
 api.init_app(v1)
 
-from .redis import reset_redis_hits, increment_redis
+from .redis import reset_redis_hits, increment_redis_hits
 from .index import Api_Index
 from .stats import Api_Stats
 from .status import Api_Status

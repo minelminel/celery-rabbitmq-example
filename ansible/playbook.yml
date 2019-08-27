@@ -1,0 +1,20 @@
+- name: ec2 launcher
+  hosts: localhost
+  connection: local
+  tasks:
+  - name: launching ec2
+    ec2:
+      instance_type: t2.micro
+      instance_tags:
+        Name: michael
+      key_name: artifice
+      image: ami-0d8f6eb4f641ef691
+      region: us-east-2
+      group: my-group
+      count: 1
+      wait: yes
+      vpc_subnet_id: subnet-584bfa14
+      assign_public_ip: yes
+    git:
+      repo: 'https://github.com/minelminel/celery-rabbitmq-example.git'
+      dest: /srv/checkout
