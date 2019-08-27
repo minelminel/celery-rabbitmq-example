@@ -1,0 +1,3 @@
+---
+image: ami-0d8f6eb4f641ef691
+cluster_name: "tag_Name_{{ tag_key_vals.Name | replace('-', '_') }}"
