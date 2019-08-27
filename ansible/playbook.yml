@@ -15,6 +15,3 @@
       wait: yes
       vpc_subnet_id: subnet-584bfa14
       assign_public_ip: yes
-    git:
-      repo: 'https://github.com/minelminel/celery-rabbitmq-example.git'
-      dest: /srv/checkout
