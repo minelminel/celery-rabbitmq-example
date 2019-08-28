@@ -42,10 +42,15 @@ setup(
     version="0.0.2",
     name="Artifice",
     author=["@minelminel", "@liberty3000"],
-    url="https://www.github.com/minelminel/artifice-project",
+    url="https://www.github.com/artifice-project/artifice-project",
     description="You Are What You See",
     long_description=description_text,
     install_requires=required,
     packages=find_packages("src"),
     package_dir={"": "src"},
+    entry_points={
+        "console_scripts": [
+            "artifice-scraper=artifice.scraper.cli.cli:cli",
+        ]
+    }
 )

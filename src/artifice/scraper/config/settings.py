@@ -1,5 +1,3 @@
-# THIS FILE CAN BE REFERENCED VIA ENVIRONMENT VARIABLE.
-#
 # Namespace configuration for all of artifice.scraper
 # Handles the scraper api and celery task manager
 #    as well as rabbitmq, amqp, rcp, and Redis cache.

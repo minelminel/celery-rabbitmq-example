@@ -10,4 +10,4 @@ flask-sqlalchemy
 flask_monitoringdashboard
 requests
 pytest
-sqlalchemy-marshmallow
+marshmallow-sqlalchemy

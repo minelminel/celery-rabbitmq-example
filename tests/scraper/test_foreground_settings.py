@@ -2,6 +2,7 @@ import pytest
 from . import app
 
 def test_is_using_testing_config(app):
-    from artifice.scraper.foreground.config import Config
+    import artifice.scraper.config.settings as settings
+
     assert app.config.get('TESTING') is True
-    assert app.config.get('SQLALCHEMY_DATABASE_URI') is not Config.SQLALCHEMY_DATABASE_URI
+    assert app.config.get('SQLALCHEMY_DATABASE_URI') is not settings.SQLALCHEMY_DATABASE_URI

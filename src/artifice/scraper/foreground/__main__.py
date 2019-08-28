@@ -1,6 +1,6 @@
 import logging
 
-from artifice.scraper.cli.logger import configure_logger
+from artifice.scraper.config.logger import configure_logger
 import artifice.scraper.config.settings as settings
 from . import create_app
 
