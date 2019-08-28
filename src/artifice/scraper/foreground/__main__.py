@@ -1,18 +1,18 @@
 import logging
 
-from artifice.scraper.cli import configure_logger
-from . import db
-from . import Config, create_app
+from artifice.scraper.cli.logger import configure_logger
+import artifice.scraper.config.settings as settings
+from . import create_app
 
 
-configure_logger(Config)
-logging.info(f'Starting application with Configuration: \n{Config.__dict__}')
+configure_logger(settings)
+logging.info(f'Starting application with Configuration: \n{settings.__dict__}')
 
 app = create_app()
 
 app.run(
-    host=Config.FLASK_HOST,
-    port=Config.FLASK_PORT,
-    debug=Config.FLASK_DEBUG,
-    use_reloader=Config.FLASK_USE_RELOADER,
+    host=settings.FLASK_HOST,
+    port=settings.FLASK_PORT,
+    debug=settings.FLASK_DEBUG,
+    use_reloader=settings.FLASK_USE_RELOADER,
 )

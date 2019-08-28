@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(loc)
 # Global -- Variables
 #################################
 _eth0 = '0.0.0.0'
-_exposed_port = 80
+_exposed_port = 8080
 _redis_pword = 'password'
 _redis_host = 'localhost'
 _celery_broker_uname = 'michael'
@@ -23,9 +23,9 @@ _celery_broker_virtual_host = 'michael_vhost'
 # Foreground -- Flask
 #################################
 TESTING = False
-URL_PREFIX = '/'
+URL_PREFIX = ''
 
-FLASK_PORT = 80
+FLASK_PORT = _exposed_port
 FLASK_HOST = '0.0.0.0'
 FLASK_DEBUG = False
 FLASK_USE_RELOADER = False

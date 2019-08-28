@@ -22,7 +22,7 @@ class Api_Index(Resource):
             rules = sorted(rules, key=lambda rule: sorted(rule.methods))
         rule_methods = [",".join(sorted(rule.methods - ignored_methods)) for rule in rules]
         for rule, methods in zip(rules, rule_methods):
-            if rule.endpoint != 'static':
+            if (rule.endpoint != 'static') and ('dashboard' not in rule.endpoint):
                 reply.append(dict(endpoint=rule.endpoint,methods=methods.split(','),rule=rule.rule))
         return reply
 
