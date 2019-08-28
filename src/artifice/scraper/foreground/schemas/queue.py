@@ -1,5 +1,3 @@
-from marshmallow import fields
-
 from ..models import Queue
 from .base import BaseSchema
 from .custom import SafeUrl, Uppercase

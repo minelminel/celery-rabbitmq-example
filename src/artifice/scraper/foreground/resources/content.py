@@ -17,20 +17,20 @@ class Api_Content(Resource):
         params, _ = args_schema.dump(request.get_json())
         result = db.session.query(Content).limit(params['limit']).all()
         data, _ = contents_schema.dump(result)
-        return reply_success(msg=params,reply=data)
+        return reply_success(msg=params, reply=data)
 
     # stores gathered content to db
     @requires_body
     def post(self):
         data, errors = content_schema.load(request.get_json())
         if errors:
-            log.error({__class__:errors})
+            log.error({__class__: errors})
             return reply_error(errors)
         try:
             db.session.add(data)
             db.session.commit()
         except IntegrityError as e:
-            log.error({__class__:str(e)})
+            log.error({__class__: str(e)})
             db.session.rollback()
         data, errors = content_schema.dump(db.session.query(Content).filter_by(id=data.id).first())
         return reply_auto(data, errors)

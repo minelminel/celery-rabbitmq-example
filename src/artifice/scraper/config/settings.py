@@ -2,7 +2,6 @@
 # Handles the scraper api and celery task manager
 #    as well as rabbitmq, amqp, rcp, and Redis cache.
 import os
-import sys
 loc = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(loc)
 # BASE_DIR:///artifice/scraper/

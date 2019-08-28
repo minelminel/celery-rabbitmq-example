@@ -12,6 +12,7 @@ def increment_redis_hits():
         redis_client.incr(key)
     except redis.exceptions.ConnectionError as e:
         log.error(f'[INCREMENT HITS] {str(e)}')
+        pass
 
 def get_redis_hits():
     key = current_app.config['REDIS_HIT_COUNTER']
@@ -28,3 +29,4 @@ def reset_redis_hits():
         redis_client.set(key, 0)
     except redis.exceptions.ConnectionError as e:
         log.error(f'[RESET REDIS HITS] {str(e)}')
+        pass
