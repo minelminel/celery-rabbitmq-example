@@ -62,6 +62,6 @@ CELERY_INCLUDE = ['artifice.scraper.background.tasks']
 CELERY_LOG_LEVEL = 'ERROR'
 CELERY_LOG_FILE = 'celery.log'
 
-ENDPOINT_FOR_STATUS = 'http://{}:{}/status'.format(_eth0, _exposed_port)
-ENDPOINT_FOR_QUEUE = 'http://{}:{}/queue'.format(_eth0, _exposed_port)
-ENDPOINT_FOR_CONTENT = 'http://{}:{}/content'.format(_eth0, _exposed_port)
+URL_FOR_STATUS = 'http://{}:{}/status'.format(_eth0, _exposed_port)
+URL_FOR_QUEUE = 'http://{}:{}/queue'.format(_eth0, _exposed_port)
+URL_FOR_CONTENT = 'http://{}:{}/content'.format(_eth0, _exposed_port)

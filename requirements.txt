@@ -11,3 +11,5 @@ flask_monitoringdashboard
 requests
 pytest
 marshmallow-sqlalchemy
+flake8
+pytest-cov

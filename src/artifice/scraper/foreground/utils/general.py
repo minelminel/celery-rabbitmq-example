@@ -5,8 +5,6 @@ def _side_load(data):
         if isinstance(val, list):
             for each in val:
                 reply.append({key:each})
-        else:
-            reply.append({key:val})
     return reply
 
 

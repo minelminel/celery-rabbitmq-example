@@ -18,7 +18,10 @@ def holding_tank(url, **kwargs):
 
 @celery_app.task(name='tasks.sorting_hat')
 def sorting_hat(url, **kwargs):
-    r = requests.get(settings.URL_FOR_STATUS)
+    try:
+        r = requests.get(settings.URL_FOR_STATUS)
+    except:
+        throw(ConnectionError, 'Unable to determine whether service is enabled', settings.URL_FOR_STATUS)
     enabled = r.json().get('enabled')
     polite = r.json().get('polite')
     if enabled is True:

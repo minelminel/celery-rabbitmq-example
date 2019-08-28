@@ -13,9 +13,7 @@ class NPRParser(BaseParser):
         root = url_root(url)
         keep = []
         for link in links:
-            if not link:
-                pass
-            elif (link[0] is "#") or (len(link) < 2):
+            if (link[0] is "#") or (len(link) < 2) or (not link):
                 pass
             elif root not in link:
                 pass
