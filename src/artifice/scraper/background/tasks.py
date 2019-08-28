@@ -49,7 +49,7 @@ def archive_content(content, **kwargs):
     r = requests.post(settings.URL_FOR_CONTENT, json=content)
     fb = feed_back(content)
     url = content.get('origin')
-    return archive_url(report_done(url), feedback=fb, **kwargs)
+    return archive_url(report_done(url), content=r.status_code, feedback=fb, **kwargs)
 
 
 @celery_app.task(name='tasks.archive_url')

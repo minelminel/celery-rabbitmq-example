@@ -13,7 +13,9 @@ class NPRParser(BaseParser):
         root = url_root(url)
         keep = []
         for link in links:
-            if (link[0] is "#") or (len(link) < 2) or (not link):
+            if not link:
+                pass
+            elif (link[0] == "#") or (len(link) < 2):
                 pass
             elif root not in link:
                 pass
@@ -54,4 +56,4 @@ class NPRParser(BaseParser):
         captions = self._extract_captions()
         url = self._extract_links()
         origin = self.url
-        return dict(title=title,text=text,captions=captions,url=url,origin=origin)
+        return dict(title=title, text=text, captions=captions, url=url, origin=origin)

@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, pre_dump
+from marshmallow import Schema, fields #, pre_dump
 
 import artifice.scraper.config.settings as settings
 from .custom import Uppercase

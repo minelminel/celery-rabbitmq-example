@@ -21,7 +21,7 @@ class Api_Status(Resource):
     def post(self):
         data, errors = status_schema.load(request.get_json())
         if errors:
-            log.error({__class__:errors})
+            log.error({__class__: errors})
             return reply_error(errors)
         elif data:
             changed = supervisor.toggle_status(data)
@@ -43,4 +43,4 @@ class Api_Status(Resource):
         db.session.commit()
         reply = queues_schema.dump(result).data
         msg = f'{len(reply)} items released to task queue'
-        return reply_success(msg=msg,reply=reply)
+        return reply_success(msg=msg, reply=reply)

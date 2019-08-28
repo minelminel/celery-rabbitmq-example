@@ -1,5 +1,4 @@
 import logging
-from flask import request
 from flask_restful import Resource
 
 from ..models import db, Queue, Content
@@ -29,9 +28,9 @@ class Api_Stats(Resource):
     def get(self):
         queue = self.queue_statistics()
         content = self.content_statistics()
-        database = dict(Queue=queue,Content=content)
+        database = dict(Queue=queue, Content=content)
         uptime = supervisor.uptime()
         total_requests = get_redis_hits()
         rpm = requests_per_minute(uptime, total_requests)
-        service = dict(uptime=uptime,requests=total_requests,rpm=rpm)
-        return reply_success(database=database,service=service)
+        service = dict(uptime=uptime, requests=total_requests, rpm=rpm)
+        return reply_success(database=database, service=service)

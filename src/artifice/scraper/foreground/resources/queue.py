@@ -42,7 +42,7 @@ class Api_Queue(Resource):
                         reply.append(queue_task_schema.dump(each).data)
                     except IntegrityError as e:
                         db.session.rollback()
-                        log.error(data=each,error=str(e))
+                        log.error(data=each, error=str(e))
             for each in reply:
                 if not supervisor.status().get('debug'):
                     # holding_tank.delay(each.get('url'))
