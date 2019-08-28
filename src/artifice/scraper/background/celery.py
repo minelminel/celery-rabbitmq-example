@@ -1,8 +1,10 @@
 from celery import Celery
 
+import artifice.scraper.config.settings as settings
+
 celery_app = Celery(
-    'background',
-    broker='amqp://michael:michael123@localhost/michael_vhost',
-    backend='rpc://',
-    include=['artifice.scraper.background.tasks'],
+    settings.CELERY_MODULE,
+    broker=settings.CELERY_BROKER,
+    backend=settings.CELERY_BACKEND,
+    include=settings.CELERY_INCLUDE,
 )

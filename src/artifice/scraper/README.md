@@ -1,3 +1,21 @@
+# converting to ephemeral factory instantiation
+1. ~~create a config directory as artifice/scraper/config/~~
+2. ~~migrate the current config object to that location~~
+3. create a config_utils.py module which handles loading from environment variables override, then if none is found--using the enumerated default settings under settings.py
+4. allow all currently implemented functions to have their configuration handled by the settings file
+5. move all app extensions to a single extensions function within the application factory
+6. move creation of the celery app to within the application factory
+7. update all necessary imports
+8. build out CLI module to include functionality for starting...
+  - ONLY the flask app
+  - ONLY the celery app
+  - migrating the database(s)
+  - running the tests module
+  - creating a coverage report
+  - building the docker images required for deployment
+  - creating a wheel distribution of the package
+
+
 # TODO
 
 - ~~account for items that are getting lost in the process by retaining a status of 'TASKED' even after all the items are dumped from the celery queue~~

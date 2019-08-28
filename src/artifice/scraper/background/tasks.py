@@ -1,13 +1,10 @@
 import time
 import requests
 
+import artifice.scraper.config.settings as settings
 from .celery import celery_app
-from .config import Endpoints
 from .parsers import NPRParser
 from .util import report_done, report_ready
-
-
-endpoints = Endpoints()
 
 
 def throw(error, *args, **kwargs):
@@ -21,7 +18,10 @@ def holding_tank(url, **kwargs):
 
 @celery_app.task(name='tasks.sorting_hat')
 def sorting_hat(url, **kwargs):
-    r = requests.get(endpoints.STATUS)
+    try:
+        r = requests.get(settings.URL_FOR_STATUS)
+    except:
+        throw(ConnectionError, 'Unable to determine whether service is enabled', settings.URL_FOR_STATUS)
     enabled = r.json().get('enabled')
     polite = r.json().get('polite')
     if enabled is True:
@@ -46,7 +46,7 @@ def extract_content(response, **kwargs):
 
 @celery_app.task(name='tasks.archive_content')
 def archive_content(content, **kwargs):
-    r = requests.post(endpoints.CONTENT, json=content)
+    r = requests.post(settings.URL_FOR_CONTENT, json=content)
     fb = feed_back(content)
     url = content.get('origin')
     return archive_url(report_done(url), feedback=fb, **kwargs)
@@ -54,12 +54,12 @@ def archive_content(content, **kwargs):
 
 @celery_app.task(name='tasks.archive_url')
 def archive_url(json_data, **kwargs):
-    r = requests.put(endpoints.QUEUE, json=json_data)
+    r = requests.put(settings.URL_FOR_QUEUE, json=json_data)
     return r.status_code, {**kwargs}
 
 
 @celery_app.task(name='tasks.feed_back')
 def feed_back(content):
     json_data = dict(url=content.get('url'))
-    r = requests.post(endpoints.QUEUE, json=json_data)
+    r = requests.post(settings.URL_FOR_QUEUE, json=json_data)
     return r.status_code

@@ -1,8 +1,9 @@
-from .. import Config
+import artifice.scraper.config.settings as settings
 from .supervisor import Supervisor
 
 
 supervisor = Supervisor(
-    enabled=Config.SUPERVISOR_ENABLED,
-    debug=Config.SUPERVISOR_DEBUG
+    enabled=settings.SUPERVISOR_ENABLED,
+    debug=settings.SUPERVISOR_DEBUG,
+    polite=settings.SUPERVISOR_POLITE,
 )

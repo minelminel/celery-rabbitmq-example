@@ -7,7 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import flask_monitoringdashboard as dashboard
 
-from .config import Config
+import artifice.scraper.config.settings as settings
 
 
 api = Api()
@@ -23,7 +23,7 @@ def init_db(drop=False):
     db.create_all()
 
 
-def create_app(*args, config_from=Config, **settings_override):
+def create_app(*args, config_from=settings, **settings_override):
     # flask_app = Flask(__name__, instance_relative_config=True)
     flask_app = Flask(__name__)
     # load production/development config
@@ -44,7 +44,7 @@ def create_app(*args, config_from=Config, **settings_override):
 
     ctx = flask_app.app_context()
     with ctx:
-        init_db(drop=True)
+        init_db(drop=settings.DROP_TABLES)
     ctx.push()
 
     # # binding the dashboard spawns a scheduled process that
@@ -57,7 +57,7 @@ def create_app(*args, config_from=Config, **settings_override):
         # dashboard.add_graph('Graph1', lambda: my_func(), **schedule)
 
     from artifice.scraper.foreground.resources import v1
-    flask_app.register_blueprint(v1)
+    flask_app.register_blueprint(v1, url_prefix=settings.URL_PREFIX)
     # flask_app.register_blueprint(v1, url_prefix='/v1')
 
     from .resources import reset_redis_hits, increment_redis_hits

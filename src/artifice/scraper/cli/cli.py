@@ -1,141 +1,49 @@
-import sys
-import typing
-import logging
-import argparse
+import os
 
-class Configuration(object):
+import click
 
-    log_levels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
-
-    def __init__( self, log_level, log_file, stdout=True, drop_tables=False,
-            root_route="/scraper", host="localhost",
-            port=8080, debug=False, use_reloader=False
-        ):
-        self.log_level = log_level
-        self.log_file = log_file
-        self.stdout = stdout
-        self.drop_tables = drop_tables
-        self.root_route = root_route
-        self.host = host
-        self.port = port
-        self.debug = debug
-        self.use_reloader = use_reloader
+cmd_folder = os.path.join(os.path.dirname(__file__), 'commands')
+cmd_prefix = 'cmd_'
 
 
-def get_configuration():
-    parser = argparse.ArgumentParser(description="Configure properties for use in development.")
+class CLI(click.MultiCommand):
+    def list_commands(self, ctx):
+        """
+        Obtain a list of all available commands.
 
-    parser.add_argument(
-        "-t",
-        "--drop_tables",
-        required=False,
-        default=False,
-        help="Whether to reset or keep the current database"
-    )
+        :param ctx: Click context
+        :return: List of sorted commands
+        """
+        commands = []
 
-    server_parser = parser.add_argument_group("server", "Server")
+        for filename in os.listdir(cmd_folder):
+            if filename.endswith('.py') and filename.startswith(cmd_prefix):
+                commands.append(filename[4:-3])
 
-    server_parser.add_argument(
-        "-r",
-        "--serviceroot",
-        required=False,
-        default="/scraper/api",
-        help="The root URL path that the server should listen on"
-    )
-    server_parser.add_argument(
-        "-o",
-        "--host",
-        required=False,
-        default="localhost",
-        help="The host that the server should start on"
-    )
-    server_parser.add_argument(
-        "-p",
-        "--port",
-        required=False,
-        default=8080,
-        help="The port that the server should start on"
-    )
-    server_parser.add_argument(
-        "-d",
-        "--debug",
-        required=False,
-        action="store_true",
-        help="Whether the server should start in debug mode."
-    )
-    server_parser.add_argument(
-        "-u",
-        "--use_reloader",
-        required=False,
-        action="store_true",
-        help="Whether the server should automatically restart on saved changes."
-    )
+        commands.sort()
 
-    log_parser = parser.add_argument_group("log", "Logging")
+        return commands
 
-    log_parser.add_argument(
-        "-l",
-        "--loglevel",
-        default='WARN',
-        required=False,
-        choices=Configuration.log_levels,
-        help="The log level of the application"
-    )
-    log_parser.add_argument(
-        "-f",
-        "--logfile",
-        default=None,
-        required=False,
-        help="The log file for the application"
-    )
-    log_parser.add_argument(
-        "-s",
-        "--stdout",
-        default=True,
-        required=False,
-        help="Whether to print the log to the terminal"
-    )
+    def get_command(self, ctx, name):
+        """
+        Get a specific command by looking up the module.
 
-    args = parser.parse_args()
+        :param ctx: Click context
+        :param name: Command name
+        :return: Module's cli function
+        """
+        ns = {}
 
-    drop_tables = args.drop_tables
-    log_level = args.loglevel
-    log_file = args.logfile
-    stdout = args.stdout
-    service_root = args.serviceroot
-    host = args.host
-    port = args.port
-    debug = args.debug
-    use_reloader = args.use_reloader
+        filename = os.path.join(cmd_folder, cmd_prefix + name + '.py')
 
-    return Configuration(
-        log_level,
-        log_file,
-        stdout,
-        drop_tables,
-        service_root,
-        host,
-        port,
-        debug,
-        use_reloader,
-    )
+        with open(filename) as f:
+            code = compile(f.read(), filename, 'exec')
+            eval(code, ns, ns)
+
+        return ns['cli']
 
 
-def configure_logger(configuration):
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handlers = []
-
-    if configuration.log_file is not None:
-        file_handler = logging.FileHandler(filename=configuration.log_file, mode='a')
-        file_handler.setFormatter(formatter)
-        handlers.append(file_handler)
-    if configuration.stdout is True:
-        stream_handler = logging.StreamHandler(stream=sys.stdout)
-        stream_handler.setFormatter(formatter)
-        handlers.append(stream_handler)
-
-    logging.basicConfig(
-        datefmt='%m/%d/%Y %I:%M:%S %p',
-        level=getattr(logging, configuration.log_level),
-        handlers=handlers
-    )
+@click.command(cls=CLI)
+def cli():
+    """ Commands to help manage your project. """
+    pass
