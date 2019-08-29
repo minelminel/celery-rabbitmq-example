@@ -58,7 +58,6 @@ def create_app(*args, config_from=settings, **settings_override):
 
     from artifice.scraper.foreground.resources import v1
     flask_app.register_blueprint(v1, url_prefix=settings.URL_PREFIX)
-    # flask_app.register_blueprint(v1, url_prefix='/v1')
 
     from .resources import reset_redis_hits, increment_redis_hits
 

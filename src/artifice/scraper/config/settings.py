@@ -45,9 +45,9 @@ REDIS_HIT_COUNTER = 'HIT_COUNTER'
 ARGS_DEFAULT_LIMIT = 10
 ARGS_DEFAULT_STATUS = ['READY', 'TASKED', 'DONE']
 
-SUPERVISOR_ENABLED = False
-SUPERVISOR_DEBUG = True
-SUPERVISOR_POLITE = 3
+SUPERVISOR_ENABLED = True
+SUPERVISOR_DEBUG = False
+SUPERVISOR_POLITE = 1
 #################################
 # Background -- Celery
 #################################

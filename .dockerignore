@@ -1,6 +1,18 @@
+# hidden assets
 .dockerignore
+.gitignore
 .git
-*.db
+# python crud
 __pycache__
+.pytest_cache
+.coverage
+# manifest items
 env
+docs
+ansible
+build
+dist
+# ephemeral files
+*.log
+*.db
 *.md
