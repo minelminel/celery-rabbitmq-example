@@ -10,10 +10,6 @@ import click
 def cli(skip_init, path):
     """
     Run flake8 to analyze code base.
-
-    :param skip_init: Skip checking __init__.py files
-    :param path: Test coverage path
-    :return: Subprocess call result
     """
     flake8_flag_exclude = ''
 
