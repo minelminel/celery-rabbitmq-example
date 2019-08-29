@@ -4,7 +4,9 @@ def _side_load(data):
     for key, val in data.items():
         if isinstance(val, list):
             for each in val:
-                reply.append({key: each})
+                reply.append({key:each})
+        else:
+            reply.append({key:val})
     return reply
 
 
