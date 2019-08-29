@@ -1,18 +1,29 @@
-FROM alpine:latest
+FROM python:3.7.4-slim-buster
+LABEL maintainer="Michael <theartificeproject@gmail.com>"
 
-# pip3 python3
-RUN apk add python3
+WORKDIR /app
 
-# copy source into location
-ADD ./src /opt/artifice
-WORKDIR /opt/artifice
-# install requirements
-RUN pip3 install -e .
+COPY requirements.txt requirements.txt
 
-# set up system resources
+ENV BUILD_DEPS="build-essential" \
+    APP_DEPS="curl libpq-dev"
 
+RUN apt-get update \
+  && apt-get install -y ${BUILD_DEPS} ${APP_DEPS} --no-install-recommends \
+  && pip install -r requirements.txt \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /usr/share/doc && rm -rf /usr/share/man \
+  && apt-get purge -y --auto-remove ${BUILD_DEPS} \
+  && apt-get clean
 
-# housekeeping
+ARG FLASK_ENV="production"
+ENV FLASK_ENV="${FLASK_ENV}" \
+    PYTHONUNBUFFERED="true"
 
+COPY . .
 
-# run the app
+RUN pip install --editable .
+
+EXPOSE 8000
+
+CMD ["gunicorn", "-c", "python:artifice.scraper.config.gunicorn", "artifice.scraper.foreground:create_app()"]

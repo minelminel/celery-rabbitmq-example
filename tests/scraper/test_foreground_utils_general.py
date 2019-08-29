@@ -8,7 +8,7 @@ def test_app__side_load():
     reply = _side_load(data)
     assert reply == [{key:1},{key:2},{key:3}]
 
-def test_app_side_load():
+def test_app_side_load_list():
     from artifice.scraper.foreground.utils.general import side_load
     data1 = {'ABC':[1,2,3]}
     data2 = {'XYZ':'hello'}
@@ -17,6 +17,16 @@ def test_app_side_load():
     key = 'ABC'
     reply = side_load(key, data)
     assert reply == [{key:1},{key:2},{key:3}]
+
+def test_app_side_load_string():
+    from artifice.scraper.foreground.utils.general import side_load
+    data1 = {'ABC':[1,2,3]}
+    data2 = {'XYZ':'hello'}
+    data3 = {42:'world'}
+    data = {**data1,**data2,**data3}
+    key = 'XYZ'
+    reply = side_load(key, data)
+    assert reply == [{key:'hello'}]
 
 def test_app_setattrs():
     from artifice.scraper.foreground.utils.general import setattrs
@@ -39,7 +49,7 @@ def test_app_cmp_dict():
     after = {'A':1,'B':22,'C':33}
     reply = cmp_dict(before, after)
     assert reply == {'B':22,'C':33}
-    
+
     before = {'A':1,'B':2,'C':3}
     after = {'A':1,'B':2,'C':3}
     reply = cmp_dict(before, after)

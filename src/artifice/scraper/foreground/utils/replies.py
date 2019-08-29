@@ -12,10 +12,14 @@ def reply_conflict(*args, **kwargs):
     return make_response(jsonify(*args, **kwargs), 409)
 
 
+def reply_empty(*args, **kwargs):
+    return make_response(jsonify(*args, **kwargs), 400)
+
+
 def reply_auto(data, errors):
     if errors:
         return reply_error(errors)
     elif data:
         return reply_success(data)
     else:
-        return reply_conflict()
+        return reply_empty()

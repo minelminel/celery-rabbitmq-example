@@ -14,9 +14,11 @@ from .stats import Api_Stats
 from .status import Api_Status
 from .queue import Api_Queue
 from .content import Api_Content
+from .healthy import Api_Healthy
 
 api.add_resource(Api_Index,     '/')
 api.add_resource(Api_Stats,     '/stats')
 api.add_resource(Api_Status,    '/status')
 api.add_resource(Api_Queue,     '/queue')
 api.add_resource(Api_Content,   '/content')
+api.add_resource(Api_Healthy,   '/healthy')
