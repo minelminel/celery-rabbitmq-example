@@ -36,11 +36,14 @@ class CLI(click.MultiCommand):
 
         filename = os.path.join(cmd_folder, cmd_prefix + name + '.py')
 
-        with open(filename) as f:
-            code = compile(f.read(), filename, 'exec')
-            eval(code, ns, ns)
-
-        return ns['cli']
+        try:
+            with open(filename) as f:
+                code = compile(f.read(), filename, 'exec')
+                eval(code, ns, ns)
+            return ns['cli']
+            
+        except FileNotFoundError:
+            pass
 
 
 @click.command(cls=CLI)
