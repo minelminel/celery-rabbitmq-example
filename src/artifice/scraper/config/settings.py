@@ -1,66 +1,115 @@
-# Namespace configuration for all of artifice.scraper
-# Handles the scraper api and celery task manager
-#    as well as rabbitmq, amqp, rcp, and Redis cache.
+try:
+    import configparser
+except ImportError:
+    configparser = None
+
 import os
+import logging
+
+log = logging.getLogger(__name__)
+
 loc = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(loc)
-# BASE_DIR:///artifice/scraper/
-#################################
-# Global -- Variables
-#################################
-_eth0 = '0.0.0.0'
-_exposed_port = 8080
-_redis_pword = 'password'
-_redis_host = 'localhost'
-_celery_broker_uname = 'michael'
-_celery_broker_pword = 'michael123'
-_celery_broker_host = 'localhost'
-_celery_broker_virtual_host = 'michael_vhost'
-#################################
-# Foreground -- Flask
-#################################
-TESTING = False
-URL_PREFIX = ''
 
-FLASK_PORT = _exposed_port
-FLASK_HOST = '0.0.0.0'
-FLASK_DEBUG = False
-FLASK_USE_RELOADER = False
-FLASK_THREADED = True
+class Settings(object):
+    """
+        The settings can be changed by setting up a config file.
+        For an example of a config file, see
+        `scraper.cfg` in the main-directory.
+    """
+    def __init__(self):
+        """
+            Sets the default values for the project
+        """
+        # BASE_DIR:///artifice/scraper/
+        self.BASE_DIR = os.path.dirname(loc)
 
-DROP_TABLES = True
+        # prototypes
+        self._eth0 = '0.0.0.0'
+        self._exposed_port = 8080
+        self._db_name = 'site.db'
+        self._redis_pword = 'password'
+        self._redis_host = 'localhost'
+        self._redis_port = 6379
+        self._celery_broker_uname = 'michael'
+        self._celery_broker_pword = 'michael123'
+        self._celery_broker_host = 'localhost'
+        self._celery_broker_virtual_host = 'michael_vhost'
 
-LOG_FILE = 'flask.log'
-LOG_LEVEL = 'INFO'
-STDOUT = True
+        # flask
+        self.TESTING = False
+        self.URL_PREFIX = ''
+        self.FLASK_PORT = self._exposed_port
+        self.FLASK_HOST = '0.0.0.0'
+        self.FLASK_DEBUG = False
+        self.FLASK_USE_RELOADER = False
+        self.FLASK_THREADED = True
 
-# DASHBOARD_CONFIG =
+        # logging
+        self.LOG_FILE = 'flask.log'
+        self.LOG_LEVEL = 'INFO'
+        self.CELERY_LOG_LEVEL = 'ERROR'
+        self.CELERY_LOG_FILE = 'celery.log'
+        self.STDOUT = True
 
-SQLALCHEMY_TRACK_MODIFICATIONS = False
-SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format(os.path.join(BASE_DIR, 'site.db'))
+        # database
+        self.DROP_TABLES = True
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = False
+        self.SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format(
+                                        os.path.join(self.BASE_DIR, self._db_name))
 
-REDIS_URL = 'redis://{}:@{}:6379/0'.format(_redis_pword, _redis_host)
-REDIS_HIT_COUNTER = 'HIT_COUNTER'
+        # redis
+        self.REDIS_URL = 'redis://{}:@{}:{}/0'.format(
+                                        self._redis_pword,
+                                        self._redis_host,
+                                        self._redis_port)
+        self.REDIS_HIT_COUNTER = 'HIT_COUNTER'
 
-ARGS_DEFAULT_LIMIT = 10
-ARGS_DEFAULT_STATUS = ['READY', 'TASKED', 'DONE']
+        # defaults
+        self.ARGS_DEFAULT_LIMIT = 10
+        self.ARGS_DEFAULT_STATUS = ['READY', 'TASKED', 'DONE']
 
-SUPERVISOR_ENABLED = True
-SUPERVISOR_DEBUG = False
-SUPERVISOR_POLITE = 1
-#################################
-# Background -- Celery
-#################################
-CELERY_WORKERS = 8
-CELERY_MODULE = 'background'
-# CELERY_BROKER = 'amqp://michael:michael123@localhost/michael_vhost'
-CELERY_BROKER = 'amqp://{}:{}@{}/{}'.format(_celery_broker_uname, _celery_broker_pword, _celery_broker_host, _celery_broker_virtual_host)
-CELERY_BACKEND = 'rpc://'
-CELERY_INCLUDE = ['artifice.scraper.background.tasks']
+        self.SUPERVISOR_ENABLED = True
+        self.SUPERVISOR_DEBUG = False
+        self.SUPERVISOR_POLITE = 1
 
-CELERY_LOG_LEVEL = 'ERROR'
-CELERY_LOG_FILE = 'celery.log'
+        # celery
+        self.CELERY_WORKERS = 8
+        self.CELERY_MODULE = 'background'
+        self.CELERY_BROKER = 'amqp://{}:{}@{}/{}'.format(
+                                        self._celery_broker_uname,
+                                        self._celery_broker_pword,
+                                        self._celery_broker_host,
+                                        self._celery_broker_virtual_host)
+        self.CELERY_BACKEND = 'rpc://'
+        self.CELERY_INCLUDE = ['artifice.scraper.background.tasks']
 
-URL_FOR_STATUS = 'http://{}:{}/status'.format(_eth0, _exposed_port)
-URL_FOR_QUEUE = 'http://{}:{}/queue'.format(_eth0, _exposed_port)
-URL_FOR_CONTENT = 'http://{}:{}/content'.format(_eth0, _exposed_port)
+        # endpoints
+        self.URL_FOR_STATUS = 'http://{}:{}/status'.format(self._eth0, self._exposed_port)
+        self.URL_FOR_QUEUE = 'http://{}:{}/queue'.format(self._eth0, self._exposed_port)
+        self.URL_FOR_CONTENT = 'http://{}:{}/content'.format(self._eth0, self._exposed_port)
+
+
+    def init_from(self, file=None, envvar=None, log_verbose=False):
+        if envvar:
+            file = os.getenv(envvar)
+            if log_verbose:
+                log.info("Running with config from: " + (str(file)))
+
+        if not file:
+            return
+
+        try:
+            parser = configparser.RawConfigParser()
+            parser.read(file)
+
+            # parse prototypes
+            # parse flask
+            # parse logging
+            # parse database
+            # parse redis
+            # parse defaults
+            # parse celery
+            # parse endpoints
+        except AttributeError:
+            log.info("Cannot use configparser in Python2.7")
+            raise
