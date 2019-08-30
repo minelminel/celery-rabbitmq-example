@@ -23,7 +23,6 @@ class Api_Queue(Resource):
     @requires_body
     def post(self):
         json_data = side_load('url', request.get_json())
-        log.info(request.get_json())
         data, errors = queues_schema.load(json_data)
         if errors:
             log.error({__class__:errors})

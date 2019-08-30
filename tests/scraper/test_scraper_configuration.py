@@ -6,7 +6,7 @@ def test_artifice_scraper_settings_located():
     settings = os.environ.get('ARTIFICE_SCRAPER_SETTINGS', None)
     source = 'ENV'
     if not settings:
-        import artifice.scraper.config.settings as settings
+        from artifice.scraper.foreground import settings
         source = 'AUTO'
     assert source is 'ENV' or 'AUTO'
     assert settings

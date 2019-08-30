@@ -1,6 +1,6 @@
 from celery import Celery
 
-import artifice.scraper.config.settings as settings
+from artifice.scraper.foreground import settings
 
 celery_app = Celery(
     settings.CELERY_MODULE,

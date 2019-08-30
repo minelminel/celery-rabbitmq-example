@@ -1,7 +1,7 @@
 import time
 import requests
 
-import artifice.scraper.config.settings as settings
+from artifice.scraper.foreground import settings
 from .celery import celery_app
 from .parsers import NPRParser
 from .util import report_done, report_ready

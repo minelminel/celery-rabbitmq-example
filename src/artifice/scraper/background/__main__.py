@@ -1,5 +1,5 @@
 from . import celery_app
-import artifice.scraper.config.settings as settings
+from artifice.scraper.foreground import settings
 
 celery_app.start(
     argv=[
