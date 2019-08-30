@@ -1,4 +1,4 @@
-import artifice.scraper.config.settings as settings
+from artifice.scraper.foreground import settings
 from .supervisor import Supervisor
 
 

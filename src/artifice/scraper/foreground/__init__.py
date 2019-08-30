@@ -7,8 +7,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import flask_monitoringdashboard as dashboard
 
-import artifice.scraper.config.settings as settings
+from artifice.scraper.config import Settings
 
+settings = Settings()
 
 api = Api()
 db = SQLAlchemy()
@@ -23,11 +24,11 @@ def init_db(drop=False):
     db.create_all()
 
 
-def create_app(*args, config_from=settings, **settings_override):
+def create_app(*args, **settings_override):
     # flask_app = Flask(__name__, instance_relative_config=True)
     flask_app = Flask(__name__)
     # load production/development config
-    flask_app.config.from_object(config_from)
+    flask_app.config.from_object(settings)
     # allow test config settings overrides
     flask_app.config.update(**settings_override)
     # # ensure the instance folder exists

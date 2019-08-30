@@ -1,11 +1,14 @@
 import logging
+from pprint import pformat
 
+from artifice import artifice_logo
 from artifice.scraper.config.logger import configure_logger
-import artifice.scraper.config.settings as settings
+from artifice.scraper.foreground import settings
 from . import create_app
 
 configure_logger(settings)
-logging.info(f'Starting application with Configuration: \n{settings.__dict__}')
+logging.info(artifice_logo())
+logging.info(f'Starting application with Configuration: \n{pformat(settings.__dict__)}\n')
 
 application = create_app()
 
