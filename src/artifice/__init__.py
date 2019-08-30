@@ -1,4 +1,8 @@
 def artifice_logo():
+    """
+    http://patorjk.com/software/taag/#p=display&f=Block&t=artifice
+    `Block` font
+    """
     return \
 """
 
