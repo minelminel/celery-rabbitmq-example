@@ -30,7 +30,7 @@ FLASK_THREADED = True
 
 DROP_TABLES = True
 
-LOG_FILE = 'celery.log'
+LOG_FILE = 'flask.log'
 LOG_LEVEL = 'INFO'
 STDOUT = True
 
